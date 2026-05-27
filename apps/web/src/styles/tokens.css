@@ -1,0 +1,53 @@
+:root {
+  /* Statuts */
+  --color-free:     #16a34a;
+  --color-reserved: #d97706;
+  --color-occupied: #dc2626;
+  --color-blocked:  #374151;
+  --color-offslot:  #3b82f6;
+
+  /* Primaire — bleu profond */
+  --color-primary:       #1e3a5f;
+  --color-primary-hover: #162d4a;
+  --color-primary-light: #e8f4fd;
+
+  /* Surfaces */
+  --color-surface:   #ffffff;
+  --color-surface-2: #f8fafc;
+  --color-surface-3: #f1f5f9;
+
+  /* Bordures & texte */
+  --color-border:      #e2e8f0;
+  --color-text:        #0f172a;
+  --color-text-muted:  #64748b;
+
+  /* Espacement */
+  --space-1: 4px;  --space-2: 8px;  --space-3: 12px;
+  --space-4: 16px; --space-6: 24px; --space-8: 32px;
+
+  /* Rayon */
+  --radius-sm:   6px;
+  --radius-md:   10px;
+  --radius-lg:   16px;
+  --radius-full: 9999px;
+
+  /* Ombres */
+  --shadow-xs: 0 1px 2px rgba(0,0,0,.05);
+  --shadow-sm: 0 1px 3px rgba(0,0,0,.08), 0 1px 2px rgba(0,0,0,.04);
+  --shadow-md: 0 4px 16px rgba(0,0,0,.10), 0 2px 4px rgba(0,0,0,.06);
+  --shadow-lg: 0 10px 30px rgba(0,0,0,.14), 0 4px 8px rgba(0,0,0,.06);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --color-surface:      #0f172a;
+    --color-surface-2:    #1e293b;
+    --color-surface-3:    #334155;
+    --color-border:       #334155;
+    --color-text:         #f1f5f9;
+    --color-text-muted:   #94a3b8;
+    --color-primary:      #3b82f6;
+    --color-primary-hover:#2563eb;
+    --color-primary-light:#1e3a5f;
+  }
+}

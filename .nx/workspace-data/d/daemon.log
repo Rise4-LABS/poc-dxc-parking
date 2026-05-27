@@ -1,0 +1,11 @@
+[NX Daemon Server] - 2026-05-26T08:51:48.545Z - Started listening on: \\.\pipe\nx\C:\Users\VILLEM~1\AppData\Local\Temp\b667c008341bf8fa5c83\d.sock
+[NX Daemon Server] - 2026-05-26T08:51:48.556Z - [WATCHER]: Subscribed to changes within: C:\Users\VILLEMURAlexis\Claude Folder\driveXchange-parking (native)
+[NX Daemon Server] - 2026-05-26T08:51:48.566Z - Established a connection. Number of open connections: 1
+[NX Daemon Server] - 2026-05-26T08:51:48.569Z - Established a connection. Number of open connections: 2
+[NX Daemon Server] - 2026-05-26T08:51:48.582Z - Closed a connection. Number of open connections: 1
+[NX Daemon Server] - 2026-05-26T08:51:48.591Z - [REQUEST]: Responding to the client. Shutdown initiated
+[NX Daemon Server] - 2026-05-26T08:51:48.597Z - Done responding to the client Shutdown initiated
+[NX Daemon Server] - 2026-05-26T08:51:48.605Z - Handled FORCE_SHUTDOWN. Handling time: 1. Response time: 14.
+[NX Daemon Server] - 2026-05-26T08:51:48.606Z - Closed a connection. Number of open connections: 0
+[NX Daemon Server] - 2026-05-26T08:51:48.607Z - [WATCHER]: Stopping the watcher for C:\Users\VILLEMURAlexis\Claude Folder\driveXchange-parking (sources)
+[NX Daemon Server] - 2026-05-26T08:51:48.609Z - [WATCHER]: Stopping the watcher for C:\Users\VILLEMURAlexis\Claude Folder\driveXchange-parking (outputs)

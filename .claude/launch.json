@@ -1,0 +1,33 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "DXC Mock API",
+      "runtimeExecutable": "node",
+      "runtimeArgs": [
+        "C:\\Users\\VILLEMURAlexis\\Claude Folder\\driveXchange-parking\\mock-server.js"
+      ],
+      "port": 3000
+    },
+    {
+      "name": "DXC Parking Dev",
+      "runtimeExecutable": "node",
+      "runtimeArgs": [
+        "C:\\Users\\VILLEMURAlexis\\Claude Folder\\driveXchange-parking\\node_modules\\vite\\bin\\vite.js",
+        "C:\\Users\\VILLEMURAlexis\\Claude Folder\\driveXchange-parking\\apps\\web",
+        "--port", "5174"
+      ],
+      "port": 5174
+    },
+    {
+      "name": "DXC Parking Static",
+      "runtimeExecutable": "node",
+      "runtimeArgs": [
+        "C:\\Users\\VILLEMURAlexis\\Claude Folder\\driveXchange-parking\\node_modules\\serve\\build\\main.js",
+        "C:\\Users\\VILLEMURAlexis\\Claude Folder\\driveXchange-parking\\apps\\web\\dist",
+        "--port", "5175"
+      ],
+      "port": 5175
+    }
+  ]
+}

@@ -1,0 +1,37 @@
+import { useAuthStore } from './store/authStore';
+import { useUiStore } from './store/uiStore';
+import { LoginPage } from './pages/LoginPage';
+import { SpotGridPage } from './pages/SpotGridPage';
+import { HistoryPage } from './pages/HistoryPage';
+import { CheckInPage } from './pages/CheckInPage';
+import { PlanningPage } from './pages/PlanningPage';
+import { UsersPage } from './pages/UsersPage';
+import { LogsPage } from './pages/LogsPage';
+import { BottomNav } from './components/BottomNav';
+import { TopBar } from './components/TopBar';
+import { Toast } from './components/Toast';
+
+export function App() {
+  const { user, accessToken } = useAuthStore();
+  const { activeTab } = useUiStore();
+
+  if (!user || !accessToken) return <LoginPage />;
+
+  const isAdmin = user.role !== 'USER';
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100dvh' }}>
+      <TopBar />
+      <main style={{ flex: 1, overflowY: 'auto', paddingBottom: '80px' }}>
+        {activeTab === 'reservation'  && <SpotGridPage />}
+        {activeTab === 'my-bookings' && <HistoryPage />}
+        {activeTab === 'checkin'     && <CheckInPage />}
+        {activeTab === 'planning'    && isAdmin && <PlanningPage />}
+        {activeTab === 'users'       && isAdmin && <UsersPage />}
+        {activeTab === 'logs'        && isAdmin && <LogsPage />}
+      </main>
+      <BottomNav />
+      <Toast />
+    </div>
+  );
+}

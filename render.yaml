@@ -1,0 +1,12 @@
+services:
+  - type: web
+    name: dxc-parking
+    env: node
+    plan: free
+    buildCommand: npm install && npx vite build apps/web
+    startCommand: node mock-server.js
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: NODE_VERSION
+        value: 20

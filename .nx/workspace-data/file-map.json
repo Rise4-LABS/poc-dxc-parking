@@ -1,0 +1,341 @@
+{
+  "version": "6.0",
+  "nxVersion": "19.8.14",
+  "deps": {
+    "@prisma/client": "^5.14.0",
+    "bcryptjs": "^2.4.3",
+    "bullmq": "^5.12.0",
+    "compression": "^1.7.4",
+    "cors": "^2.8.5",
+    "express": "^4.19.2",
+    "express-rate-limit": "^7.3.1",
+    "helmet": "^7.1.0",
+    "ioredis": "^5.4.1",
+    "jsonwebtoken": "^9.0.2",
+    "postmark": "^4.0.5",
+    "prom-client": "^15.1.3",
+    "socket.io": "^4.7.5",
+    "web-push": "^3.6.7",
+    "winston": "^3.13.0",
+    "zod": "^3.23.8",
+    "@commitlint/cli": "^19.3.0",
+    "@commitlint/config-conventional": "^19.2.2",
+    "@nx/eslint": "^19.3.0",
+    "@nx/eslint-plugin": "^19.3.0",
+    "@nx/js": "^19.3.0",
+    "@nx/node": "^19.3.0",
+    "@nx/vite": "^19.3.0",
+    "@nx/web": "^19.3.0",
+    "@playwright/test": "^1.45.0",
+    "@types/bcryptjs": "^2.4.6",
+    "@types/compression": "^1.7.5",
+    "@types/cors": "^2.8.17",
+    "@types/express": "^4.17.21",
+    "@types/jsonwebtoken": "^9.0.6",
+    "@types/node": "^20.14.0",
+    "@types/react": "^18.3.3",
+    "@types/react-dom": "^18.3.0",
+    "@types/web-push": "^3.6.3",
+    "@typescript-eslint/eslint-plugin": "^7.14.1",
+    "@typescript-eslint/parser": "^7.14.1",
+    "@vitejs/plugin-react": "^4.3.1",
+    "@vitest/coverage-v8": "^1.6.0",
+    "eslint": "^8.57.0",
+    "husky": "^9.0.11",
+    "lint-staged": "^15.2.7",
+    "nx": "^19.3.0",
+    "prettier": "^3.3.2",
+    "prisma": "^5.14.0",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "socket.io-client": "^4.7.5",
+    "tsx": "^4.15.7",
+    "typescript": "^5.5.2",
+    "vite": "^5.3.1",
+    "vite-plugin-pwa": "^0.20.0",
+    "vitest": "^1.6.0",
+    "zustand": "^4.5.4"
+  },
+  "pathMappings": {
+    "@dxc/domain": [
+      "packages/domain/src/index.ts"
+    ],
+    "@dxc/application": [
+      "packages/application/src/index.ts"
+    ]
+  },
+  "nxJsonPlugins": [],
+  "fileMap": {
+    "projectFileMap": {},
+    "nonProjectFiles": [
+      {
+        "file": ".env.example",
+        "hash": "3946128947403471385"
+      },
+      {
+        "file": ".github/workflows/ci.yml",
+        "hash": "3064744325190888105"
+      },
+      {
+        "file": ".gitignore",
+        "hash": "7601071310496973412"
+      },
+      {
+        "file": ".prettierrc",
+        "hash": "18337840413125673232"
+      },
+      {
+        "file": "apps/api/Dockerfile",
+        "hash": "13963500787742320293"
+      },
+      {
+        "file": "apps/api/entrypoint.sh",
+        "hash": "409527501402418162"
+      },
+      {
+        "file": "apps/api/src/app.ts",
+        "hash": "2540375722132883142"
+      },
+      {
+        "file": "apps/api/src/config/index.ts",
+        "hash": "14443174219007595337"
+      },
+      {
+        "file": "apps/api/src/infrastructure/db/prismaClient.ts",
+        "hash": "1585868081387071086"
+      },
+      {
+        "file": "apps/api/src/interfaces/http/middlewares/auth.middleware.ts",
+        "hash": "2996127500137422805"
+      },
+      {
+        "file": "apps/api/src/interfaces/http/middlewares/errorHandler.ts",
+        "hash": "13108857566785676012"
+      },
+      {
+        "file": "apps/api/src/interfaces/http/routes/admin.routes.ts",
+        "hash": "3951163187017709933"
+      },
+      {
+        "file": "apps/api/src/interfaces/http/routes/auth.routes.ts",
+        "hash": "16023308411601294701"
+      },
+      {
+        "file": "apps/api/src/interfaces/http/routes/bookings.routes.ts",
+        "hash": "13281712387861623292"
+      },
+      {
+        "file": "apps/api/src/interfaces/http/routes/spots.routes.ts",
+        "hash": "5589164354738897504"
+      },
+      {
+        "file": "apps/api/src/server.ts",
+        "hash": "2360302275760333057"
+      },
+      {
+        "file": "apps/api/tests/unit/SpotStateMachine.test.ts",
+        "hash": "12843198160868320185"
+      },
+      {
+        "file": "apps/api/tsconfig.json",
+        "hash": "8936259089321636348"
+      },
+      {
+        "file": "apps/web/index.html",
+        "hash": "6457293785558385673"
+      },
+      {
+        "file": "apps/web/public/manifest.json",
+        "hash": "16771407055023621786"
+      },
+      {
+        "file": "apps/web/src/App.tsx",
+        "hash": "14820973009168654370"
+      },
+      {
+        "file": "apps/web/src/components/BookingSheet.tsx",
+        "hash": "9311837619055149759"
+      },
+      {
+        "file": "apps/web/src/components/BottomNav.tsx",
+        "hash": "5672283540263883797"
+      },
+      {
+        "file": "apps/web/src/components/Modal.tsx",
+        "hash": "1874840137985828466"
+      },
+      {
+        "file": "apps/web/src/components/Spinner.tsx",
+        "hash": "688713308318530837"
+      },
+      {
+        "file": "apps/web/src/components/SpotCard.tsx",
+        "hash": "18191446298887682650"
+      },
+      {
+        "file": "apps/web/src/components/Toast.tsx",
+        "hash": "11125222910614909224"
+      },
+      {
+        "file": "apps/web/src/hooks/useBookings.ts",
+        "hash": "7206344910201796284"
+      },
+      {
+        "file": "apps/web/src/hooks/useSocket.ts",
+        "hash": "5897861090812261719"
+      },
+      {
+        "file": "apps/web/src/lib/dateUtils.ts",
+        "hash": "6040948066670489632"
+      },
+      {
+        "file": "apps/web/src/main.tsx",
+        "hash": "3678164326072451541"
+      },
+      {
+        "file": "apps/web/src/pages/AdminPage.tsx",
+        "hash": "13949887406293981689"
+      },
+      {
+        "file": "apps/web/src/pages/CheckInPage.tsx",
+        "hash": "17805723731919630953"
+      },
+      {
+        "file": "apps/web/src/pages/HistoryPage.tsx",
+        "hash": "1258718133667552879"
+      },
+      {
+        "file": "apps/web/src/pages/LoginPage.tsx",
+        "hash": "9810698095758464059"
+      },
+      {
+        "file": "apps/web/src/pages/SpotGridPage.tsx",
+        "hash": "8986402871204167264"
+      },
+      {
+        "file": "apps/web/src/services/api.ts",
+        "hash": "14117627501412511403"
+      },
+      {
+        "file": "apps/web/src/store/authStore.ts",
+        "hash": "12387689018590737270"
+      },
+      {
+        "file": "apps/web/src/store/spotStore.ts",
+        "hash": "4595037090513839802"
+      },
+      {
+        "file": "apps/web/src/store/uiStore.ts",
+        "hash": "4748988905160089551"
+      },
+      {
+        "file": "apps/web/src/styles/globals.css",
+        "hash": "1433622537809976051"
+      },
+      {
+        "file": "apps/web/src/styles/tokens.css",
+        "hash": "2101068042214842232"
+      },
+      {
+        "file": "apps/web/src/types/api.types.ts",
+        "hash": "3965055091597492627"
+      },
+      {
+        "file": "apps/web/src/vite-env.d.ts",
+        "hash": "14703287221193597809"
+      },
+      {
+        "file": "apps/web/tsconfig.json",
+        "hash": "6472116920203759310"
+      },
+      {
+        "file": "apps/web/vite.config.ts",
+        "hash": "2347629830429505734"
+      },
+      {
+        "file": "commitlint.config.js",
+        "hash": "1797922694529005585"
+      },
+      {
+        "file": "docker-compose.yml",
+        "hash": "4708167002621695133"
+      },
+      {
+        "file": "nx.json",
+        "hash": "5142443532298951531"
+      },
+      {
+        "file": "package.json",
+        "hash": "15296264333655482342"
+      },
+      {
+        "file": "packages/application/src/index.ts",
+        "hash": "16269244363167400419"
+      },
+      {
+        "file": "packages/application/src/useCases/blockSpot.ts",
+        "hash": "10130171597046003196"
+      },
+      {
+        "file": "packages/application/src/useCases/cancelBooking.ts",
+        "hash": "15173728027980243896"
+      },
+      {
+        "file": "packages/application/src/useCases/checkInBooking.ts",
+        "hash": "3551731666810065372"
+      },
+      {
+        "file": "packages/application/src/useCases/releaseSpot.ts",
+        "hash": "13188319466339249779"
+      },
+      {
+        "file": "packages/application/src/useCases/reserveSpot.ts",
+        "hash": "1015733231826702791"
+      },
+      {
+        "file": "packages/application/tsconfig.json",
+        "hash": "9740243842967845242"
+      },
+      {
+        "file": "packages/domain/src/errors/DomainError.ts",
+        "hash": "3856288451682545250"
+      },
+      {
+        "file": "packages/domain/src/index.ts",
+        "hash": "514289870275274869"
+      },
+      {
+        "file": "packages/domain/src/policies/RbacPolicy.ts",
+        "hash": "1714801772826898715"
+      },
+      {
+        "file": "packages/domain/src/stateMachine/SpotStateMachine.ts",
+        "hash": "9814766405967044708"
+      },
+      {
+        "file": "packages/domain/tsconfig.json",
+        "hash": "16904066272454994091"
+      },
+      {
+        "file": "playwright.config.ts",
+        "hash": "119543426844516835"
+      },
+      {
+        "file": "prisma/schema.prisma",
+        "hash": "2435087910774227509"
+      },
+      {
+        "file": "prisma/seed.ts",
+        "hash": "6785625709968377178"
+      },
+      {
+        "file": "tsconfig.base.json",
+        "hash": "15478282654577328672"
+      },
+      {
+        "file": "vitest.config.ts",
+        "hash": "5400080193931259260"
+      }
+    ]
+  }
+}

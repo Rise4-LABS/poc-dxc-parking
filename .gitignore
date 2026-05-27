@@ -1,0 +1,15 @@
+node_modules/
+dist/
+build/
+.nx/cache
+coverage/
+playwright-report/
+test-results/
+*.db
+*.db-shm
+*.db-wal
+.env
+.env.local
+.env.production
+prisma/migrations/*.sql
+!prisma/migrations/.gitkeep

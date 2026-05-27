@@ -1,0 +1,122 @@
+import { useEffect, useState } from 'react';
+import { api } from '../services/api';
+import { useSpotStore } from '../store/spotStore';
+import { useUiStore } from '../store/uiStore';
+import { useSocket } from '../hooks/useSocket';
+import { useBookings } from '../hooks/useBookings';
+import { SpotCard } from '../components/SpotCard';
+import { BookingSheet } from '../components/BookingSheet';
+import { Spinner } from '../components/Spinner';
+import type { Spot } from '../types/api.types';
+import { todayIso } from '../lib/dateUtils';
+
+const TYPE_ORDER = ['LOT1', 'LOT2', 'BOX'];
+const TYPE_LABELS: Record<string, string> = {
+  LOT1: 'Chêne-Bourg Lot 1',
+  LOT2: 'Chêne-Bourg Lot 2',
+  BOX:  'Chêne-Bourg Box',
+};
+
+export function SpotGridPage() {
+  const { spots, setSpots, isLoading, setLoading, setError } = useSpotStore();
+  const { addToast } = useUiStore();
+  const [date, setDate] = useState(todayIso());
+  const [selectedSpot, setSelectedSpot] = useState<Spot | null>(null);
+  const { refresh: refreshBookings } = useBookings();
+  useSocket();
+
+  async function load(d: string) {
+    setLoading(true);
+    try {
+      setSpots(await api.getSpots(d));
+    } catch (err) {
+      const msg = (err as Error).message;
+      setError(msg);
+      addToast(msg, 'error');
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  useEffect(() => { void load(date); }, [date]);
+
+  const grouped = spots.reduce<Record<string, Spot[]>>((acc, s) => {
+    (acc[s.type] ??= []).push(s);
+    return acc;
+  }, {});
+
+  return (
+    <div style={{ padding: '16px', maxWidth: '600px', margin: '0 auto' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+        <h1 style={{ margin: 0, fontSize: '20px', fontWeight: 700 }}>Réservation</h1>
+        <input
+          type="date"
+          value={date}
+          onChange={(e) => setDate(e.target.value)}
+          style={{
+            padding: '8px 12px', border: '1px solid var(--color-border)',
+            borderRadius: '8px', fontSize: '13px',
+            background: 'var(--color-surface)', color: 'var(--color-text)',
+          }}
+        />
+      </div>
+
+      {isLoading ? (
+        <div style={{ display: 'flex', justifyContent: 'center', padding: '60px 0' }}>
+          <Spinner size={36} />
+        </div>
+      ) : spots.length === 0 ? (
+        <div style={{ textAlign: 'center', padding: '60px 0', color: 'var(--color-text-muted)' }}>
+          <div style={{ fontSize: '40px', marginBottom: '12px' }}>🅿️</div>
+          <p style={{ margin: 0 }}>Aucune place disponible</p>
+        </div>
+      ) : (
+        TYPE_ORDER.filter((t) => grouped[t]?.length).map((type) => (
+          <div key={type} style={{ marginBottom: '28px' }}>
+            {/* Section header with divider */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '12px' }}>
+              <span style={{
+                fontSize: '11px', fontWeight: 700, color: 'var(--color-text-muted)',
+                textTransform: 'uppercase', letterSpacing: '0.08em',
+                whiteSpace: 'nowrap',
+              }}>
+                {TYPE_LABELS[type]}
+              </span>
+              <div style={{ flex: 1, height: '1px', background: 'var(--color-border)' }} />
+              <span style={{
+                fontSize: '11px', color: 'var(--color-text-muted)',
+                background: 'var(--color-surface-2)',
+                border: '1px solid var(--color-border)',
+                borderRadius: 'var(--radius-full)',
+                padding: '1px 8px',
+                whiteSpace: 'nowrap',
+              }}>
+                {grouped[type].filter(s => s.status === 'FREE').length} libre{grouped[type].filter(s => s.status === 'FREE').length !== 1 ? 's' : ''}
+              </span>
+            </div>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))', gap: '8px' }}>
+              {grouped[type].map((spot) => (
+                <SpotCard
+                  key={spot.id}
+                  spot={spot}
+                  selected={selectedSpot?.id === spot.id}
+                  onClick={spot.status === 'FREE' ? () => setSelectedSpot(spot) : undefined}
+                />
+              ))}
+            </div>
+          </div>
+        ))
+      )}
+
+      <BookingSheet
+        spot={selectedSpot}
+        onClose={() => setSelectedSpot(null)}
+        onBooked={() => {
+          setSelectedSpot(null);
+          void load(date);
+          void refreshBookings();
+        }}
+      />
+    </div>
+  );
+}

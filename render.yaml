@@ -1,6 +1,6 @@
 services:
   - type: web
-    name: dxc-parking
+    name: poc-dxc-parking
     env: node
     plan: free
     buildCommand: npm install && npx vite build apps/web

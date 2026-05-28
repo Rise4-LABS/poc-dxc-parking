@@ -3,8 +3,7 @@ import { useAuthStore } from '../store/authStore';
 
 const USER_TABS: { id: Tab; label: string; icon: string }[] = [
   { id: 'reservation', label: 'Réservation', icon: '🅿️' },
-  { id: 'my-bookings', label: 'Mes résas',   icon: '📋' },
-  { id: 'checkin',     label: 'Check-in',    icon: '✅' },
+  { id: 'my-bookings', label: 'Mes réservations', icon: '📋' },
 ];
 
 const ADMIN_EXTRA: { id: Tab; label: string; icon: string }[] = [

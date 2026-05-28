@@ -44,7 +44,7 @@ export function TopBar() {
       <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
         <span style={{ fontSize: '20px', lineHeight: 1 }}>🅿️</span>
         <span style={{ fontSize: '15px', fontWeight: 700, color: '#fff', letterSpacing: '0.01em' }}>
-          DXC Parking
+          BoxBox
         </span>
       </div>
 

@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 
-export type Tab = 'reservation' | 'my-bookings' | 'checkin' | 'planning' | 'users' | 'logs';
+export type Tab = 'reservation' | 'my-bookings' | 'planning' | 'users' | 'logs';
 
 interface ToastItem {
   id: string;

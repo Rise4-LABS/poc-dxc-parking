@@ -66,7 +66,7 @@ export function LoginPage() {
       <div style={S.card}>
         <div style={S.logo}>
           <span style={S.icon}>🅿️</span>
-          <h1 style={S.title}>DriveXchange</h1>
+          <h1 style={S.title}>BoxBox</h1>
           <p style={S.sub}>Gestion du parking</p>
         </div>
         <form onSubmit={(e) => void handleSubmit(e)}>

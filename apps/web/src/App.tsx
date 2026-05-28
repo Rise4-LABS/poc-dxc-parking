@@ -4,7 +4,6 @@ import { LoginPage } from './pages/LoginPage';
 import { ActivationPage } from './pages/ActivationPage';
 import { SpotGridPage } from './pages/SpotGridPage';
 import { HistoryPage } from './pages/HistoryPage';
-import { CheckInPage } from './pages/CheckInPage';
 import { PlanningPage } from './pages/PlanningPage';
 import { UsersPage } from './pages/UsersPage';
 import { LogsPage } from './pages/LogsPage';
@@ -32,7 +31,6 @@ export function App() {
       <main style={{ flex: 1, overflowY: 'auto', paddingBottom: '80px' }}>
         {activeTab === 'reservation'  && <SpotGridPage />}
         {activeTab === 'my-bookings' && <HistoryPage />}
-        {activeTab === 'checkin'     && <CheckInPage />}
         {activeTab === 'planning'    && isAdmin && <PlanningPage />}
         {activeTab === 'users'       && isAdmin && <UsersPage />}
         {activeTab === 'logs'        && isAdmin && <LogsPage />}

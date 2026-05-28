@@ -1,14 +1,94 @@
-// ─── DriveXchange Parking — Mock API Server ───────────────────────────────
+// ─── BoxBox — Mock API Server ───────────────────────────────
 // Fully in-memory, no DB required. Runs on port 3000.
 // Comptes de test:
 //   AVI    / 0000  →  Admin (4 onglets)
 //   USR001 / 1234  →  Utilisateur standard
 //   USR002 / 5678  →  Utilisateur standard (Marie Martin)
 
-const http     = require('http');
-const fs       = require('fs');
-const nodePath = require('path');
-const crypto   = require('crypto');
+const http      = require('http');
+const fs        = require('fs');
+const nodePath  = require('path');
+const crypto    = require('crypto');
+const nodemailer = require('nodemailer');
+
+// ─── Chargement .env ─────────────────────────────────────────────────────────
+function loadEnv() {
+  const envPath = nodePath.join(__dirname, '.env');
+  if (!fs.existsSync(envPath)) return;
+  fs.readFileSync(envPath, 'utf8').split('\n').forEach(line => {
+    const trimmed = line.trim();
+    if (!trimmed || trimmed.startsWith('#')) return;
+    const eqIdx = trimmed.indexOf('=');
+    if (eqIdx < 0) return;
+    const key = trimmed.slice(0, eqIdx).trim();
+    const val = trimmed.slice(eqIdx + 1).trim();
+    if (!process.env[key]) process.env[key] = val;
+  });
+}
+loadEnv();
+
+// ─── Transporteur email ──────────────────────────────────────────────────────
+const mailTransporter = nodemailer.createTransport({
+  host:   process.env.MAIL_HOST || 'smtp.office365.com',
+  port:   parseInt(process.env.MAIL_PORT || '587'),
+  secure: false, // TLS via STARTTLS
+  auth: {
+    user: process.env.MAIL_USER,
+    pass: process.env.MAIL_PASS,
+  },
+  tls: { ciphers: 'SSLv3' },
+});
+
+const MAIL_ENABLED = !!(process.env.MAIL_USER && process.env.MAIL_PASS && process.env.MAIL_PASS !== 'MOT_DE_PASSE_ICI');
+
+async function sendActivationMail(toEmail, toName, token) {
+  if (!MAIL_ENABLED) {
+    console.log(`[MAIL] ⚠️  Email désactivé (MAIL_PASS non configuré)`);
+    console.log(`[MAIL]    Lien d'activation : ${process.env.APP_URL || 'http://localhost:5174'}/?activate=${token}`);
+    return;
+  }
+  const activationUrl = `${process.env.APP_URL || 'http://localhost:5174'}/?activate=${token}`;
+  const firstName = toName.split(' ')[0];
+  try {
+    await mailTransporter.sendMail({
+      from:    process.env.MAIL_FROM || `"BoxBox" <${process.env.MAIL_USER}>`,
+      to:      toEmail,
+      subject: '🅿️ Votre accès à l\'application Parking',
+      html: `
+        <div style="font-family: Arial, sans-serif; max-width: 480px; margin: 0 auto; padding: 32px 24px; background: #f8fafc;">
+          <div style="background: #1e3a5f; border-radius: 12px 12px 0 0; padding: 24px; text-align: center;">
+            <span style="font-size: 36px;">🅿️</span>
+            <h1 style="color: #fff; margin: 8px 0 0; font-size: 20px; font-weight: 700;">BoxBox</h1>
+          </div>
+          <div style="background: #fff; border: 1px solid #e2e8f0; border-top: none; border-radius: 0 0 12px 12px; padding: 32px 24px;">
+            <p style="font-size: 15px; color: #1e293b; margin: 0 0 16px;">Bonjour <strong>${firstName}</strong>,</p>
+            <p style="font-size: 14px; color: #475569; margin: 0 0 24px;">
+              Votre compte a été créé sur l'application de gestion du parking.<br>
+              Cliquez sur le bouton ci-dessous pour définir votre mot de passe et accéder à l'application.
+            </p>
+            <div style="text-align: center; margin: 0 0 24px;">
+              <a href="${activationUrl}"
+                 style="display: inline-block; padding: 14px 32px; background: #1e3a5f; color: #fff;
+                        border-radius: 8px; font-size: 15px; font-weight: 600; text-decoration: none;">
+                Créer mon mot de passe →
+              </a>
+            </div>
+            <p style="font-size: 12px; color: #94a3b8; margin: 0 0 8px;">
+              Ce lien est à usage unique. Si vous ne l'utilisez pas, un administrateur pourra en générer un nouveau.
+            </p>
+            <p style="font-size: 12px; color: #94a3b8; margin: 0;">
+              Si le bouton ne fonctionne pas, copiez ce lien dans votre navigateur :<br>
+              <span style="color: #1e3a5f; word-break: break-all;">${activationUrl}</span>
+            </p>
+          </div>
+        </div>
+      `,
+    });
+    console.log(`[MAIL] ✅ Email d'activation envoyé à ${toEmail}`);
+  } catch (err) {
+    console.error(`[MAIL] ❌ Erreur envoi email à ${toEmail}:`, err.message);
+  }
+}
 
 function generateToken() {
   return crypto.randomBytes(24).toString('hex');
@@ -507,6 +587,7 @@ const server = http.createServer((req, res) => {
       };
       USERS.push(u);
       pushLog('USER_CREATED', { userId: u.id, userName: u.name, accessId: u.email, role: u.role, detail: `Lien d'activation généré` });
+      void sendActivationMail(u.email, u.name, token);
       return send(201, adminUser(u));
     });
   }
@@ -521,6 +602,7 @@ const server = http.createServer((req, res) => {
     u.status = 'PENDING';
     u.pin    = null;
     pushLog('USER_UPDATED', { userId: u.id, userName: u.name, accessId: u.email, role: u.role, detail: 'Lien d\'activation régénéré' });
+    void sendActivationMail(u.email, u.name, token);
     return send(200, adminUser(u));
   }
 
@@ -575,7 +657,7 @@ const server = http.createServer((req, res) => {
 
 server.listen(PORT, () => {
   console.log('');
-  console.log('  ✅  Mock API DriveXchange Parking');
+  console.log('  ✅  Mock API BoxBox');
   console.log(`  📡  http://localhost:${PORT}`);
   console.log('');
   console.log('  Comptes de test:');

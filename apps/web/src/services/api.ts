@@ -41,10 +41,16 @@ export interface BookingInput {
 }
 
 export const api = {
-  login: (accessId: string, pin: string) =>
+  login: (email: string, password: string) =>
     request<{ accessToken: string; refreshToken: string; user: User }>('/auth/login', {
       method: 'POST',
-      body: JSON.stringify({ accessId, pin }),
+      body: JSON.stringify({ email, password }),
+    }),
+
+  activateAccount: (token: string, password: string) =>
+    request<{ message: string }>('/auth/activate', {
+      method: 'POST',
+      body: JSON.stringify({ token, password }),
     }),
 
   getSpots: (date?: string) =>
@@ -97,6 +103,9 @@ export const api = {
 
   deleteUser: (id: string) =>
     request<void>(`/admin/users/${id}`, { method: 'DELETE' }),
+
+  resendActivation: (id: string) =>
+    request<User>(`/admin/users/${id}/resend-activation`, { method: 'POST' }),
 
   adminCreateBooking: (data: AdminBookingPayload) =>
     request<BookingWithSpot[]>('/admin/bookings', { method: 'POST', body: JSON.stringify(data) }),

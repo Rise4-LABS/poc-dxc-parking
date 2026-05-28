@@ -8,6 +8,11 @@
 const http     = require('http');
 const fs       = require('fs');
 const nodePath = require('path');
+const crypto   = require('crypto');
+
+function generateToken() {
+  return crypto.randomBytes(24).toString('hex');
+}
 
 const PORT    = process.env.PORT || 3000;
 const DIST    = nodePath.join(__dirname, 'apps', 'web', 'dist');
@@ -27,9 +32,9 @@ const MIME    = {
 
 // ─── Données initiales ────────────────────────────────────────────────────────
 let USERS = [
-  { id: 'u1', name: 'AVI',           accessId: 'AVI',    pin: '0000', role: 'ADMIN', locale: 'fr', active: true },
-  { id: 'u2', name: 'Jean Dupont',   accessId: 'USR001', pin: '1234', role: 'USER',  locale: 'fr', active: true },
-  { id: 'u3', name: 'Marie Martin',  accessId: 'USR002', pin: '5678', role: 'USER',  locale: 'fr', active: true },
+  { id: 'u1', name: 'Admin DXC',    email: 'admin@dxc.com',         accessId: 'AVI',    pin: '0000', role: 'ADMIN', locale: 'fr', active: true, status: 'ACTIVE',  activationToken: null },
+  { id: 'u2', name: 'Jean Dupont',  email: 'jean.dupont@dxc.com',   accessId: 'USR001', pin: '1234', role: 'USER',  locale: 'fr', active: true, status: 'ACTIVE',  activationToken: null },
+  { id: 'u3', name: 'Marie Martin', email: 'marie.martin@dxc.com',  accessId: 'USR002', pin: '5678', role: 'USER',  locale: 'fr', active: true, status: 'ACTIVE',  activationToken: null },
 ];
 let userCounter = 4;
 
@@ -107,19 +112,20 @@ function datesBetween(startDate, endDate) {
 
 function safeUser(u) {
   if (!u || !u.id) return {};
-  const { pin, ...rest } = u;
+  const { pin, activationToken, ...rest } = u;
   return rest;
 }
 
-// Version admin : inclut le PIN (routes admin uniquement)
+// Version admin : inclut le token d'activation (pour afficher le lien)
 function adminUser(u) {
   if (!u || !u.id) return {};
-  return { ...u };
+  const { pin, ...rest } = u; // pin masqué même en admin
+  return rest;
 }
 
 // Minimal fake JWT — base64(payload), no real signature
 function makeToken(user) {
-  const payload = Buffer.from(JSON.stringify({ sub: user.id, role: user.role, name: user.name })).toString('base64url');
+  const payload = Buffer.from(JSON.stringify({ sub: user.id, role: user.role, name: user.name, email: user.email })).toString('base64url');
   return `mock.${payload}.sig`;
 }
 function decodeToken(header = '') {
@@ -191,22 +197,44 @@ const server = http.createServer((req, res) => {
   // ── Auth ──────────────────────────────────────────────────────────────────
 
   if (path === '/api/auth/login' && method === 'POST') {
-    return readBody(({ accessId, pin }) => {
-      const user = USERS.find(u => u.accessId === accessId && u.pin === pin);
-      if (!user) {
-        pushLog('LOGIN_FAILED', { accessId: accessId ?? '?', detail: 'Identifiant ou PIN incorrect' });
-        return send(401, { message: 'Identifiant ou PIN incorrect' });
+    return readBody(({ email, password }) => {
+      const user = USERS.find(u => u.email === email);
+      if (!user || user.pin !== password) {
+        pushLog('LOGIN_FAILED', { accessId: email ?? '?', detail: 'Email ou mot de passe incorrect' });
+        return send(401, { message: 'Email ou mot de passe incorrect' });
+      }
+      if (user.status === 'PENDING') {
+        pushLog('LOGIN_FAILED', { userId: user.id, userName: user.name, accessId: user.email, role: user.role, detail: 'Compte non activé' });
+        return send(403, { message: 'Compte non activé. Vérifiez votre email pour activer votre compte.', code: 'PENDING' });
       }
       if (user.active === false) {
-        pushLog('LOGIN_FAILED', { userId: user.id, userName: user.name, accessId: user.accessId, role: user.role, detail: 'Compte désactivé' });
+        pushLog('LOGIN_FAILED', { userId: user.id, userName: user.name, accessId: user.email, role: user.role, detail: 'Compte désactivé' });
         return send(403, { message: 'Compte désactivé. Contactez un administrateur.' });
       }
-      pushLog('LOGIN', { userId: user.id, userName: user.name, accessId: user.accessId, role: user.role });
+      pushLog('LOGIN', { userId: user.id, userName: user.name, accessId: user.email, role: user.role });
       send(200, {
         accessToken:  makeToken(user),
         refreshToken: `refresh.${user.id}.token`,
         user: safeUser(user),
       });
+    });
+  }
+
+  // POST /api/auth/activate — définir son mot de passe via le lien d'activation
+  if (path === '/api/auth/activate' && method === 'POST') {
+    return readBody(({ token, password }) => {
+      if (!token || !password)
+        return send(400, { message: 'Token et mot de passe requis' });
+      const user = USERS.find(u => u.activationToken === token);
+      if (!user)
+        return send(404, { message: 'Lien d\'activation invalide ou déjà utilisé' });
+      if (password.length < 6)
+        return send(400, { message: 'Le mot de passe doit faire au moins 6 caractères' });
+      user.pin             = password;
+      user.status          = 'ACTIVE';
+      user.activationToken = null;
+      pushLog('USER_UPDATED', { userId: user.id, userName: user.name, accessId: user.email, role: user.role, detail: 'Mot de passe défini via lien d\'activation' });
+      return send(200, { message: 'Mot de passe défini. Vous pouvez maintenant vous connecter.' });
     });
   }
 
@@ -461,24 +489,39 @@ const server = http.createServer((req, res) => {
     return send(200, logs);
   }
 
-  // POST /api/admin/users — créer un utilisateur
+  // POST /api/admin/users — créer un utilisateur (email + nom + rôle, pas de mot de passe)
   if (path === '/api/admin/users' && method === 'POST') {
-    return readBody(({ name, accessId, pin, role, active, locale }) => {
-      if (!name || !accessId || !pin || !role)
-        return send(400, { message: 'Champs obligatoires manquants (name, accessId, pin, role)' });
-      if (accessId.length > 6)
-        return send(400, { message: "L'identifiant ne peut pas dépasser 6 caractères" });
-      if (USERS.find(u => u.accessId === accessId))
-        return send(409, { message: `L'identifiant "${accessId}" est déjà utilisé` });
+    return readBody(({ name, email, role, active, locale }) => {
+      if (!name || !email || !role)
+        return send(400, { message: 'Champs obligatoires manquants (name, email, role)' });
+      if (USERS.find(u => u.email === email))
+        return send(409, { message: `L'email "${email}" est déjà utilisé` });
+      const token = generateToken();
       const u = {
-        id: `u${userCounter++}`, name, accessId, pin,
-        role: role ?? 'USER', locale: locale ?? 'fr',
+        id: `u${userCounter++}`, name, email,
+        accessId: email.split('@')[0].slice(0, 8).toUpperCase(),
+        pin: null, role: role ?? 'USER', locale: locale ?? 'fr',
         active: active !== false,
+        status: 'PENDING',
+        activationToken: token,
       };
       USERS.push(u);
-      pushLog('USER_CREATED', { userId: u.id, userName: u.name, accessId: u.accessId, role: u.role });
+      pushLog('USER_CREATED', { userId: u.id, userName: u.name, accessId: u.email, role: u.role, detail: `Lien d'activation généré` });
       return send(201, adminUser(u));
     });
+  }
+
+  // POST /api/admin/users/:id/resend-activation — régénérer le lien d'activation
+  const resendM = path.match(/^\/api\/admin\/users\/([^/]+)\/resend-activation$/);
+  if (resendM && method === 'POST') {
+    const u = USERS.find(u => u.id === resendM[1]);
+    if (!u) return send(404, { message: 'Utilisateur introuvable' });
+    const token = generateToken();
+    u.activationToken = token;
+    u.status = 'PENDING';
+    u.pin    = null;
+    pushLog('USER_UPDATED', { userId: u.id, userName: u.name, accessId: u.email, role: u.role, detail: 'Lien d\'activation régénéré' });
+    return send(200, adminUser(u));
   }
 
   // PATCH /api/admin/users/:id — modifier
@@ -490,21 +533,18 @@ const server = http.createServer((req, res) => {
 
     if (method === 'PATCH') {
       return readBody(data => {
-        if (data.accessId && data.accessId !== u.accessId) {
-          if (data.accessId.length > 6)
-            return send(400, { message: "L'identifiant ne peut pas dépasser 6 caractères" });
-          if (USERS.find(x => x.accessId === data.accessId && x.id !== u.id))
-            return send(409, { message: `L'identifiant "${data.accessId}" est déjà utilisé` });
+        if (data.email && data.email !== u.email) {
+          if (USERS.find(x => x.email === data.email && x.id !== u.id))
+            return send(409, { message: `L'email "${data.email}" est déjà utilisé` });
         }
-        const { pin, ...rest } = data;
+        const { pin, activationToken, ...rest } = data; // ces champs ne se modifient pas ici
         Object.assign(u, rest);
-        if (pin) u.pin = pin; // PIN modifié uniquement si fourni
-        pushLog('USER_UPDATED', { userId: u.id, userName: u.name, accessId: u.accessId, role: u.role });
+        pushLog('USER_UPDATED', { userId: u.id, userName: u.name, accessId: u.email, role: u.role });
         return send(200, adminUser(u));
       });
     }
     if (method === 'DELETE') {
-      pushLog('USER_DELETED', { userId: u.id, userName: u.name, accessId: u.accessId, role: u.role });
+      pushLog('USER_DELETED', { userId: u.id, userName: u.name, accessId: u.email, role: u.role });
       USERS = USERS.filter(x => x.id !== adminUserM[1]);
       res.writeHead(204); res.end(); return;
     }

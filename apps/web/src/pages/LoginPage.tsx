@@ -13,10 +13,10 @@ const S = {
     borderRadius: 'var(--radius-lg)', padding: '40px 32px',
     width: '100%', maxWidth: '360px', boxShadow: 'var(--shadow-md)',
   } as const,
-  logo: { textAlign: 'center' as const, marginBottom: '32px' },
-  icon: { fontSize: '52px', display: 'block', marginBottom: '12px' },
+  logo:  { textAlign: 'center' as const, marginBottom: '32px' },
+  icon:  { fontSize: '52px', display: 'block', marginBottom: '12px' },
   title: { fontSize: '24px', fontWeight: 800, color: 'var(--color-text)', margin: '0 0 4px' },
-  sub: { fontSize: '14px', color: 'var(--color-text-muted)', margin: 0 },
+  sub:   { fontSize: '14px', color: 'var(--color-text-muted)', margin: 0 },
   field: { marginBottom: '20px' },
   label: { display: 'block' as const, fontSize: '14px', fontWeight: 500, color: 'var(--color-text)', marginBottom: '6px' },
   input: {
@@ -34,23 +34,28 @@ const S = {
 };
 
 export function LoginPage() {
-  const [accessId,  setAccessId]  = useState('');
-  const [pin,       setPin]       = useState('');
-  const [showPin,   setShowPin]   = useState(false);
-  const [loading, setLoading] = useState(false);
+  const [email,    setEmail]    = useState('');
+  const [password, setPassword] = useState('');
+  const [showPwd,  setShowPwd]  = useState(false);
+  const [loading,  setLoading]  = useState(false);
   const { setTokens, setUser } = useAuthStore();
   const { addToast } = useUiStore();
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (!pin) { addToast('Le mot de passe est requis', 'error'); return; }
+    if (!email || !password) { addToast('Veuillez remplir tous les champs', 'error'); return; }
     setLoading(true);
     try {
-      const data = await api.login(accessId.toUpperCase().trim(), pin);
+      const data = await api.login(email.trim().toLowerCase(), password);
       setTokens(data.accessToken, data.refreshToken);
       setUser(data.user);
     } catch (err) {
-      addToast((err as Error).message || 'Identifiants invalides', 'error');
+      const msg = (err as Error).message || 'Identifiants invalides';
+      if (msg.includes('non activé') || msg.includes('PENDING')) {
+        addToast('Votre compte n\'est pas encore activé. Vérifiez votre email.', 'error');
+      } else {
+        addToast(msg, 'error');
+      }
     } finally {
       setLoading(false);
     }
@@ -66,16 +71,14 @@ export function LoginPage() {
         </div>
         <form onSubmit={(e) => void handleSubmit(e)}>
           <div style={S.field}>
-            <label style={S.label}>Identifiant d'accès</label>
+            <label style={S.label}>Adresse email</label>
             <input
               style={S.input}
-              type="text"
-              value={accessId}
-              onChange={(e) => setAccessId(e.target.value.toUpperCase())}
-              placeholder="MAR001"
-              maxLength={6}
-              autoComplete="username"
-              autoCapitalize="characters"
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder="prenom.nom@dxc.com"
+              autoComplete="email"
               required
             />
           </div>
@@ -83,25 +86,24 @@ export function LoginPage() {
             <label style={S.label}>Mot de passe</label>
             <div style={{ position: 'relative' }}>
               <input
-                style={{ ...S.input, paddingRight: '44px' }}
-                type={showPin ? 'text' : 'password'}
-                value={pin}
-                onChange={(e) => setPin(e.target.value)}
+                style={{ ...S.input, paddingRight: '48px' }}
+                type={showPwd ? 'text' : 'password'}
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
                 placeholder="Votre mot de passe"
                 autoComplete="current-password"
                 required
               />
               <button
                 type="button"
-                onClick={() => setShowPin(v => !v)}
+                onClick={() => setShowPwd(v => !v)}
                 style={{
                   position: 'absolute', right: '12px', top: '50%', transform: 'translateY(-50%)',
                   border: 'none', background: 'transparent', cursor: 'pointer',
                   color: 'var(--color-text-muted)', fontSize: '18px', padding: '4px',
                 }}
-                title={showPin ? 'Masquer' : 'Afficher'}
               >
-                {showPin ? '🙈' : '👁'}
+                {showPwd ? '🙈' : '👁'}
               </button>
             </div>
           </div>

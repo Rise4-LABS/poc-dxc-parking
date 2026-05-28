@@ -18,15 +18,15 @@ export interface Booking {
 }
 
 export interface User {
-  id: string; name: string; accessId: string; role: string; locale: string;
-  active: boolean;
-  pin?: string;   // présent uniquement dans les réponses admin
+  id: string; name: string; email: string; accessId: string;
+  role: string; locale: string; active: boolean;
+  status: 'PENDING' | 'ACTIVE';
+  activationToken?: string | null;  // présent uniquement dans les réponses admin
 }
 
 export interface UserPayload {
   name: string;
-  accessId: string;
-  pin?: string;          // optionnel en édition (vide = inchangé)
+  email: string;
   role: string;
   active: boolean;
   locale?: string;

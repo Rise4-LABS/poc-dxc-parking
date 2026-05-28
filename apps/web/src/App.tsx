@@ -1,6 +1,7 @@
 import { useAuthStore } from './store/authStore';
 import { useUiStore } from './store/uiStore';
 import { LoginPage } from './pages/LoginPage';
+import { ActivationPage } from './pages/ActivationPage';
 import { SpotGridPage } from './pages/SpotGridPage';
 import { HistoryPage } from './pages/HistoryPage';
 import { CheckInPage } from './pages/CheckInPage';
@@ -15,7 +16,13 @@ export function App() {
   const { user, accessToken } = useAuthStore();
   const { activeTab } = useUiStore();
 
-  if (!user || !accessToken) return <LoginPage />;
+  // Lien d'activation dans l'URL (?activate=TOKEN)
+  const activateToken = new URLSearchParams(window.location.search).get('activate');
+
+  if (!user || !accessToken) {
+    if (activateToken) return <ActivationPage token={activateToken} />;
+    return <LoginPage />;
+  }
 
   const isAdmin = user.role !== 'USER';
 

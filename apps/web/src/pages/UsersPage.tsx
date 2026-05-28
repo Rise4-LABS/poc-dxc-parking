@@ -11,6 +11,37 @@ const ROLE_LABELS: Record<string, { label: string; color: string; bg: string }> 
   USER:        { label: 'Utilisateur', color: '#374151', bg: '#f3f4f6' },
 };
 
+function buildActivationLink(token: string) {
+  return `${window.location.origin}/?activate=${token}`;
+}
+
+function CopyLinkButton({ token }: { token: string }) {
+  const [copied, setCopied] = useState(false);
+  return (
+    <button
+      onClick={(e) => {
+        e.stopPropagation();
+        void navigator.clipboard.writeText(buildActivationLink(token));
+        setCopied(true);
+        setTimeout(() => setCopied(false), 2000);
+      }}
+      title={buildActivationLink(token)}
+      style={{
+        display: 'inline-flex', alignItems: 'center', gap: '4px',
+        padding: '4px 10px',
+        border: `1px solid ${copied ? '#86efac' : '#fde68a'}`,
+        borderRadius: '20px',
+        background: copied ? '#f0fdf4' : '#fffbeb',
+        color: copied ? '#16a34a' : '#92400e',
+        fontSize: '11px', fontWeight: 600, cursor: 'pointer',
+        whiteSpace: 'nowrap',
+      }}
+    >
+      {copied ? '✓ Copié' : '📋 Lien d\'activation'}
+    </button>
+  );
+}
+
 export function UsersPage() {
   const [users,     setUsers]     = useState<User[]>([]);
   const [loading,   setLoading]   = useState(true);
@@ -43,12 +74,26 @@ export function UsersPage() {
     fontSize: '14px', verticalAlign: 'middle',
   };
 
+  const pendingCount = users.filter(u => u.status === 'PENDING').length;
+
   return (
     <div style={{ padding: '16px' }}>
 
       {/* ── Header ── */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
-        <h1 style={{ margin: 0, fontSize: '20px', fontWeight: 700 }}>Utilisateurs</h1>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+          <h1 style={{ margin: 0, fontSize: '20px', fontWeight: 700 }}>Utilisateurs</h1>
+          {pendingCount > 0 && (
+            <span style={{
+              padding: '3px 9px', borderRadius: '20px',
+              background: '#fffbeb', color: '#92400e',
+              border: '1px solid #fde68a',
+              fontSize: '12px', fontWeight: 600,
+            }}>
+              ⏳ {pendingCount} en attente
+            </span>
+          )}
+        </div>
         <button
           onClick={() => setModalUser(null)}
           style={{
@@ -71,7 +116,7 @@ export function UsersPage() {
             <thead>
               <tr>
                 <th style={th}>Nom complet</th>
-                <th style={th}>Identifiant</th>
+                <th style={th}>Email</th>
                 <th style={th}>Profil</th>
                 <th style={{ ...th, textAlign: 'center' }}>Statut</th>
                 <th style={{ ...th, textAlign: 'center' }}>Actions</th>
@@ -87,17 +132,20 @@ export function UsersPage() {
               ) : users.map((u, idx) => {
                 const roleInfo = ROLE_LABELS[u.role] ?? ROLE_LABELS.USER;
                 const isActive = u.active !== false;
+                const isPending = u.status === 'PENDING';
                 const isEven = idx % 2 === 0;
 
                 return (
                   <tr
                     key={u.id}
                     style={{
-                      background: !isActive
-                        ? '#fff5f5'
-                        : isEven
-                          ? 'var(--color-surface)'
-                          : 'var(--color-surface-2)',
+                      background: isPending
+                        ? '#fffdf0'
+                        : !isActive
+                          ? '#fff5f5'
+                          : isEven
+                            ? 'var(--color-surface)'
+                            : 'var(--color-surface-2)',
                     }}
                   >
                     {/* Nom */}
@@ -105,8 +153,8 @@ export function UsersPage() {
                       <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                         <span style={{
                           width: '34px', height: '34px', borderRadius: '50%',
-                          background: isActive ? 'var(--color-primary)' : '#e5e7eb',
-                          color: isActive ? '#fff' : '#9ca3af',
+                          background: isPending ? '#fde68a' : isActive ? 'var(--color-primary)' : '#e5e7eb',
+                          color: isPending ? '#92400e' : isActive ? '#fff' : '#9ca3af',
                           display: 'flex', alignItems: 'center', justifyContent: 'center',
                           fontSize: '13px', fontWeight: 700, flexShrink: 0,
                         }}>
@@ -118,16 +166,14 @@ export function UsersPage() {
                       </div>
                     </td>
 
-                    {/* Identifiant */}
+                    {/* Email */}
                     <td style={td}>
-                      <code style={{
-                        background: 'var(--color-surface-2)', padding: '3px 8px',
-                        borderRadius: '6px', fontSize: '13px',
-                        fontWeight: 700, letterSpacing: '0.05em',
-                        color: isActive ? 'var(--color-text)' : '#9ca3af',
+                      <span style={{
+                        fontSize: '13px',
+                        color: isActive ? 'var(--color-text-muted)' : '#9ca3af',
                       }}>
-                        {u.accessId}
-                      </code>
+                        {u.email ?? '—'}
+                      </span>
                     </td>
 
                     {/* Profil */}
@@ -144,19 +190,36 @@ export function UsersPage() {
 
                     {/* Statut */}
                     <td style={{ ...td, textAlign: 'center' }}>
-                      <span style={{
-                        display: 'inline-flex', alignItems: 'center', gap: '5px',
-                        padding: '4px 10px', borderRadius: '20px', fontSize: '12px', fontWeight: 600,
-                        background: isActive ? '#dcfce7' : '#fee2e2',
-                        color: isActive ? '#16a34a' : '#dc2626',
-                      }}>
-                        <span style={{
-                          width: '6px', height: '6px', borderRadius: '50%',
-                          background: isActive ? '#16a34a' : '#dc2626',
-                          display: 'inline-block',
-                        }} />
-                        {isActive ? 'Actif' : 'Inactif'}
-                      </span>
+                      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '6px' }}>
+                        {isPending ? (
+                          <span style={{
+                            display: 'inline-flex', alignItems: 'center', gap: '5px',
+                            padding: '4px 10px', borderRadius: '20px', fontSize: '12px', fontWeight: 600,
+                            background: '#fffbeb', color: '#92400e',
+                            border: '1px solid #fde68a',
+                          }}>
+                            ⏳ En attente
+                          </span>
+                        ) : (
+                          <span style={{
+                            display: 'inline-flex', alignItems: 'center', gap: '5px',
+                            padding: '4px 10px', borderRadius: '20px', fontSize: '12px', fontWeight: 600,
+                            background: isActive ? '#dcfce7' : '#fee2e2',
+                            color: isActive ? '#16a34a' : '#dc2626',
+                          }}>
+                            <span style={{
+                              width: '6px', height: '6px', borderRadius: '50%',
+                              background: isActive ? '#16a34a' : '#dc2626',
+                              display: 'inline-block',
+                            }} />
+                            {isActive ? 'Actif' : 'Inactif'}
+                          </span>
+                        )}
+                        {/* Bouton copier lien pour les users en attente */}
+                        {isPending && u.activationToken && (
+                          <CopyLinkButton token={u.activationToken} />
+                        )}
+                      </div>
                     </td>
 
                     {/* Actions */}
@@ -188,8 +251,8 @@ export function UsersPage() {
             borderTop: '1px solid var(--color-border)',
             fontSize: '12px', color: 'var(--color-text-muted)',
           }}>
-            {users.length} utilisateur{users.length !== 1 ? 's' : ''} au total —{' '}
-            {users.filter(u => u.active !== false).length} actif{users.filter(u => u.active !== false).length !== 1 ? 's' : ''}
+            {users.length} utilisateur{users.length !== 1 ? 's' : ''} —{' '}
+            {users.filter(u => u.status === 'ACTIVE' && u.active !== false).length} actif{users.filter(u => u.status === 'ACTIVE' && u.active !== false).length !== 1 ? 's' : ''}{pendingCount > 0 ? ` · ${pendingCount} en attente d'activation` : ''}
           </div>
         </div>
       )}

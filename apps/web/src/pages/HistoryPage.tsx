@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { api } from '../services/api';
 import { useUiStore } from '../store/uiStore';
+import { useAuthStore } from '../store/authStore';
 import { Spinner } from '../components/Spinner';
 import { EditBookingModal } from '../components/EditBookingModal';
 import { formatDateFr } from '../lib/dateUtils';
@@ -24,11 +25,17 @@ export function HistoryPage() {
   const [cancelling,   setCancelling]   = useState<string | null>(null);
   const [editBooking,  setEditBooking]  = useState<BookingWithSpot | null>(null);
   const { addToast, setActiveTab } = useUiStore();
+  const { user } = useAuthStore();
+  const isAdmin = user?.role !== 'USER';
 
   async function load() {
     setLoading(true);
     try {
-      setBookings(await api.getMyBookings());
+      if (isAdmin) {
+        setBookings(await api.getAllBookings('2020-01-01', '2030-12-31'));
+      } else {
+        setBookings(await api.getMyBookings());
+      }
     } catch (err) {
       addToast((err as Error).message, 'error');
     } finally {
@@ -56,7 +63,9 @@ export function HistoryPage() {
 
   return (
     <div style={{ padding: '16px', maxWidth: '600px', margin: '0 auto' }}>
-      <h1 style={{ margin: '0 0 20px', fontSize: '20px', fontWeight: 700 }}>Mes réservations</h1>
+      <h1 style={{ margin: '0 0 20px', fontSize: '20px', fontWeight: 700 }}>
+        {isAdmin ? 'Historique des réservations' : 'Mes réservations'}
+      </h1>
 
       {loading ? (
         <div style={{ display: 'flex', justifyContent: 'center', padding: '60px 0' }}>
@@ -110,6 +119,11 @@ export function HistoryPage() {
                     <div style={{ color: 'var(--color-text-muted)', fontSize: '13px', marginTop: '3px' }}>
                       {formatDateFr(b.date)} · {b.startTime}–{b.endTime}
                     </div>
+                    {isAdmin && b.user && (
+                      <div style={{ color: 'var(--color-text-muted)', fontSize: '12px', marginTop: '2px' }}>
+                        👤 {b.user.name}
+                      </div>
+                    )}
                   </div>
                   <span style={{
                     fontSize: '11px', fontWeight: 600, flexShrink: 0,

@@ -17,7 +17,10 @@ export function BottomNav() {
   const { user } = useAuthStore();
 
   const isAdmin = user?.role !== 'USER';
-  const tabs = isAdmin ? [...USER_TABS, ...ADMIN_EXTRA] : USER_TABS;
+  const baseTabs = isAdmin
+    ? USER_TABS.map(t => t.id === 'my-bookings' ? { ...t, label: 'Historique', icon: '📋' } : t)
+    : USER_TABS;
+  const tabs = isAdmin ? [...baseTabs, ...ADMIN_EXTRA] : baseTabs;
 
   return (
     <nav style={{

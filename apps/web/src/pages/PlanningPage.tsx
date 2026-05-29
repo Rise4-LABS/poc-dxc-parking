@@ -349,16 +349,6 @@ export function PlanningPage() {
                             onMouseEnter={e => { (e.currentTarget as HTMLElement).style.filter = 'brightness(0.85)'; }}
                             onMouseLeave={e => { (e.currentTarget as HTMLElement).style.filter = ''; }}
                           >
-                            {/* Admin badge — week views only */}
-                            {isAdmin && !isMonth && (
-                              <span style={{
-                                position: 'absolute', top: '3px', right: '3px',
-                                width: '14px', height: '14px', borderRadius: '50%',
-                                background: 'rgba(255,255,255,0.85)', color: '#b45309',
-                                fontSize: '8px', fontWeight: 800,
-                                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                              }}>A</span>
-                            )}
 
                             {isMonth ? (
                               /* Month view — initial seulement */

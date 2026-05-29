@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, type CSSProperties } from 'react';
 import { api } from '../services/api';
 import { useSpotStore } from '../store/spotStore';
 import { useUiStore } from '../store/uiStore';
@@ -51,20 +51,39 @@ export function SpotGridPage() {
     return acc;
   }, {});
 
+  function shiftDate(days: number) {
+    const d = new Date(date);
+    d.setDate(d.getDate() + days);
+    setDate(d.toISOString().slice(0, 10));
+  }
+
+  const arrowBtn: CSSProperties = {
+    width: '32px', height: '32px',
+    display: 'flex', alignItems: 'center', justifyContent: 'center',
+    border: '1px solid var(--color-border)', borderRadius: '8px',
+    background: 'var(--color-surface)', color: 'var(--color-text)',
+    fontSize: '16px', cursor: 'pointer', flexShrink: 0,
+    lineHeight: 1,
+  };
+
   return (
     <div style={{ padding: '16px', maxWidth: '600px', margin: '0 auto' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
         <h1 style={{ margin: 0, fontSize: '20px', fontWeight: 700 }}>Réservation</h1>
-        <input
-          type="date"
-          value={date}
-          onChange={(e) => setDate(e.target.value)}
-          style={{
-            padding: '8px 12px', border: '1px solid var(--color-border)',
-            borderRadius: '8px', fontSize: '13px',
-            background: 'var(--color-surface)', color: 'var(--color-text)',
-          }}
-        />
+        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+          <button style={arrowBtn} onClick={() => shiftDate(-1)} title="Jour précédent">‹</button>
+          <input
+            type="date"
+            value={date}
+            onChange={(e) => setDate(e.target.value)}
+            style={{
+              padding: '6px 10px', border: '1px solid var(--color-border)',
+              borderRadius: '8px', fontSize: '13px',
+              background: 'var(--color-surface)', color: 'var(--color-text)',
+            }}
+          />
+          <button style={arrowBtn} onClick={() => shiftDate(1)} title="Jour suivant">›</button>
+        </div>
       </div>
 
       {isLoading ? (

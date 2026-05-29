@@ -32,17 +32,21 @@ export function TopBar() {
       position: 'sticky',
       top: 0,
       zIndex: 200,
-      display: 'flex',
-      alignItems: 'flex-end',
-      justifyContent: 'space-between',
-      paddingTop: 'env(safe-area-inset-top, 0px)',
-      paddingLeft: '16px',
-      paddingRight: '16px',
-      paddingBottom: '10px',
-      minHeight: 'calc(54px + env(safe-area-inset-top, 0px))',
       background: 'var(--color-primary)',
       boxShadow: '0 2px 8px rgba(0,0,0,0.18)',
     }}>
+      {/* Spacer qui repousse le contenu sous la barre d'état iOS (safe area) */}
+      <div aria-hidden="true" style={{ height: 'env(safe-area-inset-top, 0px)' }} />
+
+      {/* Contenu du header */}
+      <div style={{
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        padding: '8px 16px 10px',
+        minHeight: '54px',
+      }}>
+
       {/* Logo */}
       <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
         <span style={{ fontSize: '20px', lineHeight: 1 }}>🅿️</span>
@@ -103,6 +107,7 @@ export function TopBar() {
           Déconnexion
         </button>
       </div>
+      </div>{/* fin contenu header */}
     </header>
   );
 }

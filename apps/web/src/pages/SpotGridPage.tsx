@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { api } from '../services/api';
 import { useSpotStore } from '../store/spotStore';
 import { useUiStore } from '../store/uiStore';
+import { useAuthStore } from '../store/authStore';
 import { useSocket } from '../hooks/useSocket';
 import { useBookings } from '../hooks/useBookings';
 import { SpotCard } from '../components/SpotCard';
@@ -20,7 +21,12 @@ const TYPE_LABELS: Record<string, string> = {
 export function SpotGridPage() {
   const { spots, setSpots, isLoading, setLoading, setError } = useSpotStore();
   const { addToast } = useUiStore();
+  const { user } = useAuthStore();
+  const isAdmin = user?.role !== 'USER';
   const [date, setDate] = useState(todayIso());
+
+  // Les utilisateurs ne voient que les places libres
+  const visibleSpots = isAdmin ? spots : spots.filter(s => s.status === 'FREE');
   const [selectedSpot, setSelectedSpot] = useState<Spot | null>(null);
   const { refresh: refreshBookings } = useBookings();
   useSocket();
@@ -40,7 +46,7 @@ export function SpotGridPage() {
 
   useEffect(() => { void load(date); }, [date]);
 
-  const grouped = spots.reduce<Record<string, Spot[]>>((acc, s) => {
+  const grouped = visibleSpots.reduce<Record<string, Spot[]>>((acc, s) => {
     (acc[s.type] ??= []).push(s);
     return acc;
   }, {});
@@ -65,10 +71,11 @@ export function SpotGridPage() {
         <div style={{ display: 'flex', justifyContent: 'center', padding: '60px 0' }}>
           <Spinner size={36} />
         </div>
-      ) : spots.length === 0 ? (
+      ) : visibleSpots.length === 0 ? (
         <div style={{ textAlign: 'center', padding: '60px 0', color: 'var(--color-text-muted)' }}>
           <div style={{ fontSize: '40px', marginBottom: '12px' }}>🅿️</div>
-          <p style={{ margin: 0 }}>Aucune place disponible</p>
+          <p style={{ margin: 0, fontWeight: 600 }}>Aucune place disponible</p>
+          <p style={{ margin: '8px 0 0', fontSize: '13px' }}>Toutes les places sont réservées pour cette date.</p>
         </div>
       ) : (
         TYPE_ORDER.filter((t) => grouped[t]?.length).map((type) => (

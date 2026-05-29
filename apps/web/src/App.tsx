@@ -18,7 +18,7 @@ export function App() {
   // Lien d'activation dans l'URL (?activate=TOKEN)
   const activateToken = new URLSearchParams(window.location.search).get('activate');
 
-  if (!user || !accessToken) {
+  if (!user) {
     if (activateToken) return <ActivationPage token={activateToken} />;
     return <LoginPage />;
   }

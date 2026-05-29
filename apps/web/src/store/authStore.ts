@@ -36,6 +36,6 @@ export const useAuthStore = create<AuthState>()(
         } catch { return false; }
       },
     }),
-    { name: 'dxc-auth', partialize: (s) => ({ refreshToken: s.refreshToken, user: s.user }) },
+    { name: 'dxc-auth', partialize: (s) => ({ accessToken: s.accessToken, refreshToken: s.refreshToken, user: s.user }) },
   ),
 );

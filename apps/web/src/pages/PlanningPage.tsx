@@ -87,7 +87,10 @@ function cellStatus(spot: Spot, dateStr: string, bookings: BookingWithSpot[]): C
 function getCellLabel(booking: BookingWithSpot): string {
   if (booking.isIndefinite) return booking.vehicleLabel ?? booking.adminNote ?? 'Bloqué';
   if (booking.vehicleLabel) return booking.vehicleLabel;
-  const name = (booking.user as { name?: string } | undefined)?.name;
+  const user = booking.user as { name?: string; trigram?: string | null } | undefined;
+  // Priorité au trigramme
+  if (user?.trigram) return user.trigram;
+  const name = user?.name;
   if (!name) return booking.adminNote ?? '–';
   const parts = name.trim().split(' ');
   return parts.length > 1 ? `${parts[0]} ${parts[parts.length - 1][0]}.` : parts[0];

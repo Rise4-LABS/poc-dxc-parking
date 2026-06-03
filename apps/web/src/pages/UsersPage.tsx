@@ -116,6 +116,7 @@ export function UsersPage() {
             <thead>
               <tr>
                 <th style={th}>Nom complet</th>
+                <th style={{ ...th, textAlign: 'center' }}>Trigramme</th>
                 <th style={th}>Email</th>
                 <th style={th}>Profil</th>
                 <th style={{ ...th, textAlign: 'center' }}>Statut</th>
@@ -125,7 +126,7 @@ export function UsersPage() {
             <tbody>
               {users.length === 0 ? (
                 <tr>
-                  <td colSpan={5} style={{ ...td, textAlign: 'center', color: 'var(--color-text-muted)', padding: '40px' }}>
+                  <td colSpan={6} style={{ ...td, textAlign: 'center', color: 'var(--color-text-muted)', padding: '40px' }}>
                     Aucun utilisateur
                   </td>
                 </tr>
@@ -164,6 +165,24 @@ export function UsersPage() {
                           {u.name}
                         </span>
                       </div>
+                    </td>
+
+                    {/* Trigramme */}
+                    <td style={{ ...td, textAlign: 'center' }}>
+                      {u.trigram ? (
+                        <span style={{
+                          display: 'inline-block',
+                          padding: '3px 8px', borderRadius: '6px',
+                          background: 'var(--color-surface-2)', border: '1px solid var(--color-border)',
+                          fontSize: '12px', fontWeight: 700, letterSpacing: '0.08em',
+                          color: isActive ? 'var(--color-text)' : '#9ca3af',
+                          fontFamily: 'monospace',
+                        }}>
+                          {u.trigram}
+                        </span>
+                      ) : (
+                        <span style={{ color: 'var(--color-text-muted)', fontSize: '12px' }}>—</span>
+                      )}
                     </td>
 
                     {/* Email */}

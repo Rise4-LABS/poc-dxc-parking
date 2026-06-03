@@ -19,6 +19,7 @@ export function UserModal({ open, user, onClose, onSaved }: Props) {
   const [firstName,     setFirstName]     = useState('');
   const [lastName,      setLastName]      = useState('');
   const [email,         setEmail]         = useState('');
+  const [trigram,       setTrigram]       = useState('');
   const [role,          setRole]          = useState<'USER' | 'ADMIN'>('USER');
   const [active,        setActive]        = useState(true);
   const [loading,       setLoading]       = useState(false);
@@ -42,12 +43,14 @@ export function UserModal({ open, user, onClose, onSaved }: Props) {
       setFirstName(parts[0] ?? '');
       setLastName(parts.slice(1).join(' '));
       setEmail(user.email ?? '');
+      setTrigram(user.trigram ?? '');
       setRole((user.role === 'ADMIN' || user.role === 'SUPER_ADMIN') ? 'ADMIN' : 'USER');
       setActive(user.active !== false);
     } else {
       setFirstName('');
       setLastName('');
       setEmail('');
+      setTrigram('');
       setRole('USER');
       setActive(true);
     }
@@ -70,12 +73,13 @@ export function UserModal({ open, user, onClose, onSaved }: Props) {
     setError('');
     try {
       const name = [firstName.trim(), lastName.trim()].filter(Boolean).join(' ');
+      const trigramValue = trigram.trim().toUpperCase().slice(0, 3) || null;
       if (isEdit && user) {
-        await api.updateUser(user.id, { name, email: email.trim().toLowerCase(), role, active });
+        await api.updateUser(user.id, { name, email: email.trim().toLowerCase(), role, active, trigram: trigramValue });
         addToast('Utilisateur modifié', 'success');
         onSaved();
       } else {
-        const created = await api.createUser({ name, email: email.trim().toLowerCase(), role, active });
+        const created = await api.createUser({ name, email: email.trim().toLowerCase(), role, active, trigram: trigramValue });
         if (created.activationToken) {
           setActivationLink(buildActivationLink(created.activationToken));
         } else {
@@ -205,10 +209,10 @@ export function UserModal({ open, user, onClose, onSaved }: Props) {
         </div>
       )}
 
-      {/* Prénom / Nom */}
+      {/* Prénom / Nom / Trigramme */}
       <div style={section}>
         <label style={labelStyle}>Identité</label>
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', marginBottom: '8px' }}>
           <div>
             <label style={{ fontSize: '12px', color: 'var(--color-text-muted)', marginBottom: '4px', display: 'block' }}>Prénom *</label>
             <input type="text" value={firstName} onChange={e => setFirstName(e.target.value)} placeholder="Jean" style={input} />
@@ -217,6 +221,20 @@ export function UserModal({ open, user, onClose, onSaved }: Props) {
             <label style={{ fontSize: '12px', color: 'var(--color-text-muted)', marginBottom: '4px', display: 'block' }}>Nom</label>
             <input type="text" value={lastName} onChange={e => setLastName(e.target.value)} placeholder="Dupont" style={input} />
           </div>
+        </div>
+        <div>
+          <label style={{ fontSize: '12px', color: 'var(--color-text-muted)', marginBottom: '4px', display: 'block' }}>
+            Trigramme
+            <span style={{ fontWeight: 400, marginLeft: '6px', color: 'var(--color-text-muted)', opacity: 0.7 }}>— affiché sur le planning (ex&nbsp;: BFE)</span>
+          </label>
+          <input
+            type="text"
+            value={trigram}
+            onChange={e => setTrigram(e.target.value.toUpperCase().replace(/[^A-Z]/g, '').slice(0, 3))}
+            placeholder="JDU"
+            maxLength={3}
+            style={{ ...input, width: '80px', textTransform: 'uppercase', fontWeight: 700, letterSpacing: '0.1em', textAlign: 'center' }}
+          />
         </div>
       </div>
 

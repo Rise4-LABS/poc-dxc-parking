@@ -112,7 +112,8 @@ function datesBetween(startDate, endDate) {
 function mapUser(r) {
   if (!r) return {};
   return { id: r.id, name: r.name, email: r.email, accessId: r.access_id, role: r.role,
-    locale: r.locale, active: r.active, status: r.status, activationToken: r.activation_token };
+    locale: r.locale, active: r.active, status: r.status, activationToken: r.activation_token,
+    trigram: r.trigram ?? null };
 }
 function safeUser(r)  { if (!r?.id) return {}; const { activationToken, ...rest } = mapUser(r); return rest; }
 function adminUser(r) { if (!r?.id) return {}; return mapUser(r); }
@@ -173,6 +174,7 @@ async function initDb() {
       locale TEXT DEFAULT 'fr', active BOOLEAN DEFAULT true,
       status TEXT DEFAULT 'PENDING', activation_token TEXT
     );
+    ALTER TABLE users ADD COLUMN IF NOT EXISTS trigram TEXT;
     CREATE TABLE IF NOT EXISTS spots (
       id TEXT PRIMARY KEY, number TEXT NOT NULL, type TEXT NOT NULL,
       status TEXT DEFAULT 'FREE', block_reason TEXT
@@ -505,7 +507,7 @@ const server = http.createServer(async (req, res) => {
           const [ex] = await q('SELECT id FROM users WHERE email=$1 AND id!=$2', [data.email, u.id]);
           if (ex) return send(409, { message: `L'email "${data.email}" est déjà utilisé` });
         }
-        const fm = { name:'name', email:'email', role:'role', active:'active', locale:'locale' };
+        const fm = { name:'name', email:'email', role:'role', active:'active', locale:'locale', trigram:'trigram' };
         const sets = [], params = [];
         Object.entries(data).forEach(([k,v]) => { if (fm[k]) { params.push(v); sets.push(`${fm[k]}=$${params.length}`); } });
         if (sets.length) { params.push(u.id); await q(`UPDATE users SET ${sets.join(',')} WHERE id=$${params.length}`, params); }

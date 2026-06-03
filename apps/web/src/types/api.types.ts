@@ -22,6 +22,7 @@ export interface User {
   role: string; locale: string; active: boolean;
   status: 'PENDING' | 'ACTIVE';
   activationToken?: string | null;  // présent uniquement dans les réponses admin
+  trigram?: string | null;
 }
 
 export interface UserPayload {
@@ -30,6 +31,7 @@ export interface UserPayload {
   role: string;
   active: boolean;
   locale?: string;
+  trigram?: string | null;
 }
 
 export type BookingWithSpot = Booking & { spot?: Spot; user?: User };

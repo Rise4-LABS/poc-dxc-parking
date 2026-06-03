@@ -85,20 +85,26 @@ function cellStatus(spot: Spot, dateStr: string, bookings: BookingWithSpot[]): C
 }
 
 function getCellLabel(booking: BookingWithSpot): string {
-  if (booking.isIndefinite) return booking.vehicleLabel ?? booking.adminNote ?? 'Bloqué';
+  // Véhicule → toujours prioritaire
   if (booking.vehicleLabel) return booking.vehicleLabel;
+  // Lié à un conducteur → trigramme ou nom
   const user = booking.user as { name?: string; trigram?: string | null } | undefined;
-  // Priorité au trigramme
   if (user?.trigram) return user.trigram;
   const name = user?.name;
-  if (!name) return booking.adminNote ?? '–';
-  const parts = name.trim().split(' ');
-  return parts.length > 1 ? `${parts[0]} ${parts[parts.length - 1][0]}.` : parts[0];
+  if (name) {
+    const parts = name.trim().split(' ');
+    return parts.length > 1 ? `${parts[0]} ${parts[parts.length - 1][0]}.` : parts[0];
+  }
+  // Pas de conducteur ni véhicule → note admin ou label générique
+  return booking.adminNote ?? (booking.isIndefinite ? 'Bloqué' : '–');
 }
 
 function getCellInitial(booking: BookingWithSpot): string {
-  const lbl = booking.vehicleLabel ?? (booking.user as { name?: string } | undefined)?.name;
-  return lbl ? lbl.charAt(0).toUpperCase() : '•';
+  if (booking.vehicleLabel) return booking.vehicleLabel.charAt(0).toUpperCase();
+  const user = booking.user as { name?: string; trigram?: string | null } | undefined;
+  if (user?.trigram) return user.trigram.charAt(0).toUpperCase();
+  const name = user?.name;
+  return name ? name.charAt(0).toUpperCase() : '•';
 }
 
 function getTooltip(booking: BookingWithSpot, status: string): string {

@@ -44,6 +44,16 @@ function IconUsers({ active }: { active: boolean }) {
     </svg>
   );
 }
+function IconStats({ active }: { active: boolean }) {
+  const c = active ? 'var(--color-primary)' : 'var(--color-text-muted)';
+  return (
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <line x1="12" y1="20" x2="12" y2="10" />
+      <line x1="18" y1="20" x2="18" y2="4" />
+      <line x1="6" y1="20" x2="6" y2="16" />
+    </svg>
+  );
+}
 function IconLogs({ active }: { active: boolean }) {
   const c = active ? 'var(--color-primary)' : 'var(--color-text-muted)';
   return (
@@ -68,6 +78,7 @@ const USER_TABS: TabDef[] = [
 
 const ADMIN_EXTRA: TabDef[] = [
   { id: 'planning', label: 'Planning',     Icon: IconPlanning },
+  { id: 'stats',    label: 'Stats',        Icon: IconStats    },
   { id: 'users',    label: 'Utilisateurs', Icon: IconUsers    },
   { id: 'logs',     label: 'Logs',         Icon: IconLogs     },
 ];

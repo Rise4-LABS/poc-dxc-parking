@@ -38,6 +38,14 @@ export interface BookingInput {
   startTime: string;
   endTime: string;
   joinWaitListIfFull?: boolean;
+  /** Récurrence hebdomadaire : répète la réservation chaque semaine jusqu'à cette date incluse */
+  repeatWeeklyUntil?: string;
+}
+
+/** Réponse du serveur quand repeatWeeklyUntil est fourni */
+export interface RecurringBookingResult {
+  bookings: Booking[];
+  skipped: string[];   // dates en conflit, non réservées
 }
 
 export const api = {
@@ -60,7 +68,7 @@ export const api = {
     request<BookingWithSpot[]>('/bookings/me'),
 
   createBooking: (data: BookingInput) =>
-    request<Booking>('/bookings', { method: 'POST', body: JSON.stringify(data) }),
+    request<Booking | RecurringBookingResult>('/bookings', { method: 'POST', body: JSON.stringify(data) }),
 
   cancelBooking: (id: string) =>
     request<Booking>(`/bookings/${id}/cancel`, { method: 'PATCH' }),

@@ -74,6 +74,50 @@ async function sendActivationMail(toEmail, toName, token) {
   }
 }
 
+// kind: 'CONFIRMED' | 'CANCELLED' — dates: tableau de 'YYYY-MM-DD'
+async function sendBookingMail(toEmail, toName, kind, spotNumber, dates, startTime, endTime) {
+  if (!MAIL_ENABLED) {
+    console.log(`[MAIL] ⚠️  Email désactivé — ${kind} place ${spotNumber} (${dates.join(', ')}) pour ${toEmail}`);
+    return;
+  }
+  const firstName = toName.split(' ')[0];
+  const fmtDate = (iso) => new Date(iso + 'T00:00:00').toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+  const isCancel = kind === 'CANCELLED';
+  const dateLines = dates.map(d => `<li style="margin:2px 0;">${fmtDate(d)}</li>`).join('');
+  try {
+    await mailTransporter.sendMail({
+      from:    process.env.MAIL_FROM || `"BoxBox" <${process.env.MAIL_USER}>`,
+      to:      toEmail,
+      subject: isCancel
+        ? `🅿️ Réservation annulée — place ${spotNumber}`
+        : `🅿️ Réservation confirmée — place ${spotNumber}${dates.length > 1 ? ` (${dates.length} dates)` : ''}`,
+      html: `
+        <div style="font-family:Arial,sans-serif;max-width:480px;margin:0 auto;padding:32px 24px;background:#f8fafc;">
+          <div style="background:#1e3a5f;border-radius:12px 12px 0 0;padding:24px;text-align:center;">
+            <span style="font-size:36px;">🅿️</span>
+            <h1 style="color:#fff;margin:8px 0 0;font-size:20px;font-weight:700;">BoxBox</h1>
+          </div>
+          <div style="background:#fff;border:1px solid #e2e8f0;border-top:none;border-radius:0 0 12px 12px;padding:32px 24px;">
+            <p style="font-size:15px;color:#1e293b;margin:0 0 16px;">Bonjour <strong>${firstName}</strong>,</p>
+            <p style="font-size:14px;color:#475569;margin:0 0 16px;">
+              ${isCancel ? 'Votre réservation a bien été <strong>annulée</strong> :' : 'Votre réservation est <strong>confirmée</strong> :'}
+            </p>
+            <div style="background:${isCancel ? '#fef2f2' : '#f0fdf4'};border:1px solid ${isCancel ? '#fca5a5' : '#86efac'};border-radius:8px;padding:16px;margin:0 0 16px;">
+              <p style="font-size:16px;font-weight:700;color:#1e293b;margin:0 0 8px;">Place ${spotNumber} · ${startTime}–${endTime}</p>
+              <ul style="font-size:14px;color:#475569;margin:0;padding-left:18px;">${dateLines}</ul>
+            </div>
+            <p style="font-size:12px;color:#94a3b8;margin:0;">
+              Gérez vos réservations sur <a href="${process.env.APP_URL || 'http://localhost:5174'}" style="color:#1e3a5f;">BoxBox</a>.
+            </p>
+          </div>
+        </div>`,
+    });
+    console.log(`[MAIL] ✅ Email ${kind} envoyé à ${toEmail}`);
+  } catch (err) {
+    console.error(`[MAIL] ❌ Erreur : ${err.message}`);
+  }
+}
+
 function generateToken() { return crypto.randomBytes(24).toString('hex'); }
 
 const PORT = process.env.PORT || 3000;
@@ -327,17 +371,48 @@ const server = http.createServer(async (req, res) => {
     if (path === '/api/bookings' && method === 'POST') {
       const me = authUser();
       if (!me) return send(401, { message: 'Non authentifié' });
-      const { spotId, date, startTime, endTime } = await getBody();
+      const { spotId, date, startTime, endTime, repeatWeeklyUntil } = await getBody();
       const [spot] = await q('SELECT * FROM spots WHERE id = $1', [spotId]);
       if (!spot) return send(404, { message: 'Place introuvable' });
-      if (await hasConflict(spotId, date)) return send(409, { message: 'Cette place est déjà réservée pour cette date' });
-      const id = `bk${Date.now()}`;
-      await q(`INSERT INTO bookings (id,spot_id,date,start_time,end_time,status,user_id,source,is_indefinite,checked_in,created_at)
-               VALUES ($1,$2,$3,$4,$5,'RESERVED',$6,'USER',false,false,$7)`,
-        [id, spotId, date, startTime, endTime, me.sub, new Date().toISOString()]);
-      await pushLog('BOOKING_CREATED', { userId: me.sub, userName: me.name, accessId: me.email, role: me.role, detail: `Place ${spot.number} le ${date}` });
-      const [bk] = await q('SELECT * FROM bookings WHERE id=$1', [id]);
-      return send(201, await withRelations(bk));
+
+      // Dates à réserver : date seule, ou récurrence hebdo jusqu'à repeatWeeklyUntil (max 12 occurrences)
+      const targetDates = [date];
+      if (repeatWeeklyUntil && repeatWeeklyUntil > date) {
+        const d = new Date(date + 'T00:00:00');
+        while (targetDates.length < 12) {
+          d.setDate(d.getDate() + 7);
+          const iso = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+          if (iso > repeatWeeklyUntil) break;
+          targetDates.push(iso);
+        }
+      }
+
+      const created = [], skipped = [];
+      for (const dt of targetDates) {
+        if (await hasConflict(spotId, dt)) { skipped.push(dt); continue; }
+        const id = `bk${Date.now()}${Math.floor(Math.random()*1000)}`;
+        await q(`INSERT INTO bookings (id,spot_id,date,start_time,end_time,status,user_id,source,is_indefinite,checked_in,created_at)
+                 VALUES ($1,$2,$3,$4,$5,'RESERVED',$6,'USER',false,false,$7)`,
+          [id, spotId, dt, startTime, endTime, me.sub, new Date().toISOString()]);
+        created.push(id);
+      }
+      if (!created.length) return send(409, { message: 'Cette place est déjà réservée pour cette date' });
+
+      await pushLog('BOOKING_CREATED', { userId: me.sub, userName: me.name, accessId: me.email, role: me.role,
+        detail: `Place ${spot.number} — ${created.length} date(s)${skipped.length ? `, ${skipped.length} conflit(s)` : ''}` });
+
+      // Email de confirmation (fire & forget)
+      const [meRow] = await q('SELECT * FROM users WHERE id=$1', [me.sub]);
+      if (meRow?.email) {
+        const createdDates = targetDates.filter(dt => !skipped.includes(dt));
+        void sendBookingMail(meRow.email, meRow.name, 'CONFIRMED', spot.number, createdDates, startTime, endTime);
+      }
+
+      const rows = await q(`SELECT * FROM bookings WHERE id = ANY($1) ORDER BY date`, [created]);
+      const withRel = await Promise.all(rows.map(withRelations));
+      // Rétro-compatible : une seule date → l'objet booking ; récurrence → { bookings, skipped }
+      if (!repeatWeeklyUntil) return send(201, withRel[0]);
+      return send(201, { bookings: withRel, skipped });
     }
 
     const cancelM = path.match(/^\/api\/bookings\/([^/]+)\/cancel$/);
@@ -348,6 +423,12 @@ const server = http.createServer(async (req, res) => {
       if (bk.user_id !== me?.sub) return send(403, { message: 'Non autorisé' });
       await q(`UPDATE bookings SET status='CANCELLED' WHERE id=$1`, [bk.id]);
       const [upd] = await q('SELECT * FROM bookings WHERE id=$1', [bk.id]);
+      // Email d'annulation (fire & forget)
+      const [meRow] = await q('SELECT * FROM users WHERE id=$1', [bk.user_id]);
+      const [spotRow] = await q('SELECT * FROM spots WHERE id=$1', [bk.spot_id]);
+      if (meRow?.email && spotRow) {
+        void sendBookingMail(meRow.email, meRow.name, 'CANCELLED', spotRow.number, [bk.date], bk.start_time, bk.end_time);
+      }
       return send(200, await withRelations(upd));
     }
 

@@ -21,18 +21,22 @@ const TIME_SLOTS = [
 ];
 
 export function BookingSheet({ spot, date: gridDate, onClose, onBooked }: Props) {
-  const [date,      setDate]      = useState(todayIso());
-  const [slotIdx,   setSlotIdx]   = useState(0);           // Journée par défaut
-  const [startTime, setStartTime] = useState('08:00');
-  const [endTime,   setEndTime]   = useState('18:00');
-  const [loading,   setLoading]   = useState(false);
-  const [error,     setError]     = useState('');
+  const [date,        setDate]        = useState(todayIso());
+  const [slotIdx,     setSlotIdx]     = useState(0);           // Journée par défaut
+  const [startTime,   setStartTime]   = useState('08:00');
+  const [endTime,     setEndTime]     = useState('18:00');
+  const [repeat,      setRepeat]      = useState(false);
+  const [repeatUntil, setRepeatUntil] = useState('');
+  const [loading,     setLoading]     = useState(false);
+  const [error,       setError]       = useState('');
   const { addToast } = useUiStore();
 
   // À l'ouverture, reprend la date sélectionnée dans la grille
   useEffect(() => {
     if (spot) {
       setDate(gridDate && gridDate >= todayIso() ? gridDate : todayIso());
+      setRepeat(false);
+      setRepeatUntil('');
       setError('');
     }
   }, [spot, gridDate]);
@@ -50,10 +54,25 @@ export function BookingSheet({ spot, date: gridDate, onClose, onBooked }: Props)
       setError("L'heure de fin doit être après l'heure de début.");
       return;
     }
+    if (repeat && (!repeatUntil || repeatUntil <= date)) {
+      setError('Choisissez une date de fin de récurrence après la date de début.');
+      return;
+    }
     setLoading(true);
     try {
-      await api.createBooking({ spotId: spot.id, date, startTime, endTime });
-      addToast(`Place ${spot.number} réservée !`, 'success');
+      const result = await api.createBooking({
+        spotId: spot.id, date, startTime, endTime,
+        ...(repeat && repeatUntil ? { repeatWeeklyUntil: repeatUntil } : {}),
+      });
+      if ('bookings' in result) {
+        const n = result.bookings.length;
+        addToast(`Place ${spot.number} réservée — ${n} date${n > 1 ? 's' : ''} !`, 'success');
+        if (result.skipped.length) {
+          addToast(`${result.skipped.length} date(s) déjà prise(s), non réservée(s)`, 'info');
+        }
+      } else {
+        addToast(`Place ${spot.number} réservée !`, 'success');
+      }
       navigator.vibrate?.([50, 30, 50]);
       onBooked();
     } catch (err) {
@@ -160,6 +179,48 @@ export function BookingSheet({ spot, date: gridDate, onClose, onBooked }: Props)
               style={timeInput}
             />
           </div>
+        </div>
+
+        {/* Récurrence hebdo */}
+        <div>
+          <button
+            type="button"
+            onClick={() => setRepeat(v => !v)}
+            style={{
+              display: 'flex', alignItems: 'center', gap: '10px',
+              width: '100%', padding: '11px 14px', boxSizing: 'border-box',
+              borderRadius: '8px',
+              border: `2px solid ${repeat ? 'var(--color-primary)' : 'var(--color-border)'}`,
+              background: repeat ? 'var(--color-primary-light)' : 'var(--color-surface)',
+              color: repeat ? 'var(--color-primary)' : 'var(--color-text)',
+              fontSize: '14px', fontWeight: 600, cursor: 'pointer', transition: 'all 0.15s',
+            }}
+          >
+            <span style={{ fontSize: '16px' }}>🔁</span>
+            Répéter chaque semaine
+            <span style={{ marginLeft: 'auto', fontSize: '13px', opacity: 0.7 }}>{repeat ? 'Oui' : 'Non'}</span>
+          </button>
+          {repeat && (
+            <div style={{ marginTop: '10px' }}>
+              <label style={labelStyle}>Jusqu'au (12 semaines max)</label>
+              <input
+                type="date"
+                value={repeatUntil}
+                min={date}
+                onChange={e => setRepeatUntil(e.target.value)}
+                onClick={e => (e.currentTarget as HTMLInputElement).showPicker?.()}
+                style={{
+                  width: '100%', padding: '11px 14px',
+                  border: '1px solid var(--color-border)', borderRadius: '8px',
+                  fontSize: '15px', background: 'var(--color-surface)',
+                  color: 'var(--color-text)', boxSizing: 'border-box',
+                }}
+              />
+              <div style={{ fontSize: '11px', color: 'var(--color-text-muted)', marginTop: '4px' }}>
+                Même jour de la semaine, même créneau. Les dates déjà prises seront ignorées.
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Bouton */}

@@ -5,6 +5,7 @@ import { ActivationPage } from './pages/ActivationPage';
 import { SpotGridPage } from './pages/SpotGridPage';
 import { HistoryPage } from './pages/HistoryPage';
 import { PlanningPage } from './pages/PlanningPage';
+import { AdminPage } from './pages/AdminPage';
 import { UsersPage } from './pages/UsersPage';
 import { LogsPage } from './pages/LogsPage';
 import { BottomNav } from './components/BottomNav';
@@ -32,6 +33,7 @@ export function App() {
         {activeTab === 'reservation'  && <SpotGridPage />}
         {activeTab === 'my-bookings' && <HistoryPage />}
         {activeTab === 'planning'    && isAdmin && <PlanningPage />}
+        {activeTab === 'stats'       && isAdmin && <AdminPage />}
         {activeTab === 'users'       && isAdmin && <UsersPage />}
         {activeTab === 'logs'        && isAdmin && <LogsPage />}
       </main>

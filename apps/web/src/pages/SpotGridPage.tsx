@@ -18,11 +18,16 @@ const TYPE_LABELS: Record<string, string> = {
 };
 
 export function SpotGridPage() {
-  const { spots, setSpots, isLoading, setLoading, setError } = useSpotStore();
-  const { addToast } = useUiStore();
+  const { spots, myBookings, setSpots, isLoading, setLoading, setError } = useSpotStore();
+  const { addToast, setActiveTab } = useUiStore();
   const { user } = useAuthStore();
   const isAdmin = user?.role !== 'USER';
   const [date, setDate] = useState(todayIso());
+
+  // Ma réservation pour la date affichée
+  const myBookingForDate = myBookings.find(
+    b => b.date === date && !['CANCELLED', 'RELEASED'].includes(b.status),
+  ) ?? null;
 
   // Les utilisateurs ne voient que les places libres
   const visibleSpots = isAdmin ? spots : spots.filter(s => s.status === 'FREE');
@@ -83,6 +88,27 @@ export function SpotGridPage() {
           <button style={arrowBtn} onClick={() => shiftDate(1)} title="Jour suivant">›</button>
         </div>
       </div>
+
+      {/* Ma réservation pour cette date */}
+      {myBookingForDate && (
+        <button
+          onClick={() => setActiveTab('my-bookings')}
+          style={{
+            display: 'flex', alignItems: 'center', gap: '10px',
+            width: '100%', padding: '12px 14px', boxSizing: 'border-box',
+            marginBottom: '16px',
+            background: '#f0fdf4', border: '1px solid #86efac', borderRadius: '10px',
+            cursor: 'pointer', textAlign: 'left',
+          }}
+        >
+          <span style={{ fontSize: '20px' }}>✅</span>
+          <span style={{ flex: 1, fontSize: '14px', color: '#15803d' }}>
+            <strong>Place {myBookingForDate.spot?.number ?? '—'}</strong> réservée
+            {date === todayIso() ? " aujourd'hui" : ' ce jour'} · {myBookingForDate.startTime}–{myBookingForDate.endTime}
+          </span>
+          <span style={{ fontSize: '12px', color: '#15803d', opacity: 0.8, whiteSpace: 'nowrap' }}>Gérer ›</span>
+        </button>
+      )}
 
       {isLoading ? (
         <div style={{ display: 'flex', justifyContent: 'center', padding: '60px 0' }}>

@@ -1,8 +1,8 @@
 {
-  "name": "DriveXchange Parking",
-  "short_name": "DXC Parking",
-  "description": "Gestionnaire de places de parking DriveXchange",
-  "theme_color": "#1a56db",
+  "name": "BoxBox",
+  "short_name": "BoxBox",
+  "description": "Gestionnaire de places de parking BoxBox",
+  "theme_color": "#1e3a5f",
   "background_color": "#ffffff",
   "display": "standalone",
   "orientation": "portrait",

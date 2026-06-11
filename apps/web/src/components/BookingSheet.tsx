@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Modal } from './Modal';
 import { Spinner } from './Spinner';
 import type { Spot } from '../types/api.types';
@@ -8,6 +8,8 @@ import { todayIso } from '../lib/dateUtils';
 
 interface Props {
   spot: Spot | null;
+  /** Date sélectionnée dans la grille — pré-remplit le formulaire */
+  date?: string;
   onClose: () => void;
   onBooked: () => void;
 }
@@ -18,7 +20,7 @@ const TIME_SLOTS = [
   { label: 'Après-midi', sublabel: '12h – 18h', start: '12:00', end: '18:00' },
 ];
 
-export function BookingSheet({ spot, onClose, onBooked }: Props) {
+export function BookingSheet({ spot, date: gridDate, onClose, onBooked }: Props) {
   const [date,      setDate]      = useState(todayIso());
   const [slotIdx,   setSlotIdx]   = useState(0);           // Journée par défaut
   const [startTime, setStartTime] = useState('08:00');
@@ -26,6 +28,14 @@ export function BookingSheet({ spot, onClose, onBooked }: Props) {
   const [loading,   setLoading]   = useState(false);
   const [error,     setError]     = useState('');
   const { addToast } = useUiStore();
+
+  // À l'ouverture, reprend la date sélectionnée dans la grille
+  useEffect(() => {
+    if (spot) {
+      setDate(gridDate && gridDate >= todayIso() ? gridDate : todayIso());
+      setError('');
+    }
+  }, [spot, gridDate]);
 
   function selectSlot(i: number) {
     setSlotIdx(i);

@@ -3,7 +3,6 @@ import { api } from '../services/api';
 import { useSpotStore } from '../store/spotStore';
 import { useUiStore } from '../store/uiStore';
 import { useAuthStore } from '../store/authStore';
-import { useSocket } from '../hooks/useSocket';
 import { useBookings } from '../hooks/useBookings';
 import { SpotCard } from '../components/SpotCard';
 import { BookingSheet } from '../components/BookingSheet';
@@ -29,7 +28,6 @@ export function SpotGridPage() {
   const visibleSpots = isAdmin ? spots : spots.filter(s => s.status === 'FREE');
   const [selectedSpot, setSelectedSpot] = useState<Spot | null>(null);
   const { refresh: refreshBookings } = useBookings();
-  useSocket();
 
   async function load(d: string) {
     setLoading(true);
@@ -136,6 +134,7 @@ export function SpotGridPage() {
 
       <BookingSheet
         spot={selectedSpot}
+        date={date}
         onClose={() => setSelectedSpot(null)}
         onBooked={() => {
           setSelectedSpot(null);

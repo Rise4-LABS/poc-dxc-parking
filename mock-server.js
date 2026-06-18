@@ -250,6 +250,19 @@ async function initDb() {
     console.log('[DB] ✅ Utilisateurs initiaux créés');
   }
 
+  // Compte admin géré — upsert idempotent à chaque démarrage (identifiants via env)
+  if (process.env.ADMIN_EMAIL && process.env.ADMIN_PASS) {
+    const email = process.env.ADMIN_EMAIL.trim().toLowerCase();
+    const pass  = process.env.ADMIN_PASS;
+    const name  = process.env.ADMIN_NAME || 'Admin DXC';
+    await q(`INSERT INTO users (id,name,email,access_id,pin,role,locale,active,status,activation_token,trigram)
+             VALUES ($1,$2,$3,'ADMIN',$4,'ADMIN','fr',true,'ACTIVE',null,'ADX')
+             ON CONFLICT (email) DO UPDATE
+               SET pin=EXCLUDED.pin, role='ADMIN', active=true, status='ACTIVE', activation_token=null, name=EXCLUDED.name`,
+      ['u-admin-managed', name, email, pass]);
+    console.log(`[DB] ✅ Compte admin géré : ${email}`);
+  }
+
   // Seed spots si vide
   const [{ count: sc }] = await q('SELECT COUNT(*)::int as count FROM spots');
   if (sc === 0) {

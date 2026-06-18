@@ -238,8 +238,9 @@ async function initDb() {
   // Seed users si vide
   const [{ count: uc }] = await q('SELECT COUNT(*)::int as count FROM users');
   if (uc === 0) {
+    // Note : l'accès admin est fourni par le compte géré (ADMIN_EMAIL/ADMIN_PASS),
+    // upserté juste après ce bloc — aucun compte admin de démo n'est seedé.
     for (const u of [
-      { id:'u1', name:'Admin DXC',    email:'admin@dxc.com',        accessId:'AVI',    pin:'0000', role:'ADMIN' },
       { id:'u2', name:'Jean Dupont',  email:'jean.dupont@dxc.com',  accessId:'USR001', pin:'1234', role:'USER'  },
       { id:'u3', name:'Marie Martin', email:'marie.martin@dxc.com', accessId:'USR002', pin:'5678', role:'USER'  },
     ]) {

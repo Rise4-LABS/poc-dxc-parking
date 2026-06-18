@@ -8,7 +8,7 @@ export default defineConfig({
     react(),
     VitePWA({
       registerType: 'autoUpdate',
-      includeAssets: ['icons/*.png'],
+      includeAssets: ['favicon.svg', 'icons/*.png'],
       manifest: {
         name: 'BoxBox',
         short_name: 'BoxBox',

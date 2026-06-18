@@ -235,21 +235,9 @@ async function initDb() {
     );
   `);
 
-  // Seed users si vide
-  const [{ count: uc }] = await q('SELECT COUNT(*)::int as count FROM users');
-  if (uc === 0) {
-    // Note : l'accès admin est fourni par le compte géré (ADMIN_EMAIL/ADMIN_PASS),
-    // upserté juste après ce bloc — aucun compte admin de démo n'est seedé.
-    for (const u of [
-      { id:'u2', name:'Jean Dupont',  email:'jean.dupont@dxc.com',  accessId:'USR001', pin:'1234', role:'USER'  },
-      { id:'u3', name:'Marie Martin', email:'marie.martin@dxc.com', accessId:'USR002', pin:'5678', role:'USER'  },
-    ]) {
-      await q(`INSERT INTO users (id,name,email,access_id,pin,role,locale,active,status,activation_token)
-               VALUES ($1,$2,$3,$4,$5,$6,'fr',true,'ACTIVE',null)`,
-        [u.id, u.name, u.email, u.accessId, u.pin, u.role]);
-    }
-    console.log('[DB] ✅ Utilisateurs initiaux créés');
-  }
+  // Aucun utilisateur de démo n'est seedé : le seul accès garanti est le compte
+  // admin géré ci-dessous (ADMIN_EMAIL/ADMIN_PASS). Les autres comptes sont créés
+  // depuis l'interface d'administration.
 
   // Compte admin géré — upsert idempotent à chaque démarrage (identifiants via env)
   if (process.env.ADMIN_EMAIL && process.env.ADMIN_PASS) {

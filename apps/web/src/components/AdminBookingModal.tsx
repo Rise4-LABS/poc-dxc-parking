@@ -104,7 +104,9 @@ export function AdminBookingModal({ open, spot, date, booking, spots, users, onC
       };
 
       if (isEdit && booking) {
-        await api.adminUpdateBooking(booking.id, payload);
+        // Le PATCH admin mappe le champ `date` (pas startDate) → on le fournit explicitement,
+        // sinon le changement de date est ignoré en silence.
+        await api.adminUpdateBooking(booking.id, { ...payload, date: startDate });
         addToast('Réservation modifiée', 'success');
       } else {
         await api.adminCreateBooking(payload);

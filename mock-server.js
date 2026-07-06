@@ -29,7 +29,7 @@ const mailTransporter = nodemailer.createTransport({
   port:   parseInt(process.env.MAIL_PORT || '587'),
   secure: false,
   auth: { user: process.env.MAIL_USER, pass: process.env.MAIL_PASS },
-  tls: { ciphers: 'SSLv3' },
+  tls: { minVersion: 'TLSv1.2' },
 });
 const MAIL_ENABLED = !!(process.env.MAIL_USER && process.env.MAIL_PASS && process.env.MAIL_PASS !== 'MOT_DE_PASSE_ICI');
 
@@ -119,6 +119,7 @@ async function sendBookingMail(toEmail, toName, kind, spotNumber, dates, startTi
 }
 
 function generateToken() { return crypto.randomBytes(24).toString('hex'); }
+function newId(prefix) { return `${prefix}-${crypto.randomUUID()}`; }
 
 const PORT = process.env.PORT || 3000;
 const DIST = nodePath.join(__dirname, 'apps', 'web', 'dist');
@@ -180,19 +181,18 @@ async function withRelations(bkRow) {
 async function spotsForDate(dateStr) {
   const spots = await q('SELECT * FROM spots ORDER BY type, number');
   const bks   = await q(`SELECT spot_id, status, is_indefinite FROM bookings
-    WHERE status != 'CANCELLED' AND (date = $1 OR (is_indefinite = true AND date <= $1))`, [dateStr]);
+    WHERE status NOT IN ('CANCELLED','RELEASED') AND (date = $1 OR (is_indefinite = true AND date <= $1))`, [dateStr]);
   return spots.map(s => {
     if (s.status === 'BLOCKED') return mapSpot(s);
     const bk = bks.find(b => b.spot_id === s.id);
     if (!bk)                         return { ...mapSpot(s), status: 'FREE' };
     if (bk.is_indefinite)            return { ...mapSpot(s), status: 'BLOCKED' };
     if (bk.status === 'OCCUPIED')    return { ...mapSpot(s), status: 'OCCUPIED' };
-    if (bk.status === 'RELEASED')    return { ...mapSpot(s), status: 'FREE' };
     return { ...mapSpot(s), status: 'RESERVED' };
   });
 }
 async function hasConflict(spotId, dateStr) {
-  const [r] = await q(`SELECT id FROM bookings WHERE spot_id = $1 AND status != 'CANCELLED'
+  const [r] = await q(`SELECT id FROM bookings WHERE spot_id = $1 AND status NOT IN ('CANCELLED','RELEASED')
     AND (date = $2 OR (is_indefinite = true AND date <= $2))`, [spotId, dateStr]);
   return r;
 }
@@ -234,6 +234,16 @@ async function initDb() {
       access_id TEXT, role TEXT, detail TEXT, timestamp TEXT
     );
   `);
+
+  // Empêche atomiquement 2 réservations actives (RELEASED exclu = place libérée)
+  // sur la même place+date. Toléré au boot : si des doublons legacy existent, on log
+  // sans crasher — la protection anti-race sera simplement absente jusqu'à nettoyage.
+  try {
+    await pool.query(`CREATE UNIQUE INDEX IF NOT EXISTS uniq_active_booking
+      ON bookings (spot_id, date) WHERE status NOT IN ('CANCELLED','RELEASED')`);
+  } catch (e) {
+    console.error('[DB] ⚠️  index uniq_active_booking non créé (doublons actifs existants ?):', e.message);
+  }
 
   // Aucun utilisateur de démo n'est seedé : le seul accès garanti est le compte
   // admin géré ci-dessous (ADMIN_EMAIL/ADMIN_PASS). Les autres comptes sont créés
@@ -376,6 +386,10 @@ const server = http.createServer(async (req, res) => {
       const { spotId, date, startTime, endTime, repeatWeeklyUntil } = await getBody();
       const [spot] = await q('SELECT * FROM spots WHERE id = $1', [spotId]);
       if (!spot) return send(404, { message: 'Place introuvable' });
+      if (spot.status === 'BLOCKED') return send(409, { message: 'Place indisponible (bloquée)' });
+      if (!date || !startTime || !endTime) return send(400, { message: 'Champs obligatoires manquants (date, heures)' });
+      if (startTime >= endTime) return send(400, { message: "L'heure de début doit être avant l'heure de fin" });
+      if (date < todayIso()) return send(400, { message: 'Impossible de réserver une date passée' });
 
       // Dates à réserver : date seule, ou récurrence hebdo jusqu'à repeatWeeklyUntil (max 12 occurrences)
       const targetDates = [date];
@@ -392,11 +406,16 @@ const server = http.createServer(async (req, res) => {
       const created = [], skipped = [];
       for (const dt of targetDates) {
         if (await hasConflict(spotId, dt)) { skipped.push(dt); continue; }
-        const id = `bk${Date.now()}${Math.floor(Math.random()*1000)}`;
-        await q(`INSERT INTO bookings (id,spot_id,date,start_time,end_time,status,user_id,source,is_indefinite,checked_in,created_at)
-                 VALUES ($1,$2,$3,$4,$5,'RESERVED',$6,'USER',false,false,$7)`,
-          [id, spotId, dt, startTime, endTime, me.sub, new Date().toISOString()]);
-        created.push(id);
+        const id = newId('bk');
+        try {
+          await q(`INSERT INTO bookings (id,spot_id,date,start_time,end_time,status,user_id,source,is_indefinite,checked_in,created_at)
+                   VALUES ($1,$2,$3,$4,$5,'RESERVED',$6,'USER',false,false,$7)`,
+            [id, spotId, dt, startTime, endTime, me.sub, new Date().toISOString()]);
+          created.push(id);
+        } catch (e) {
+          if (e.code === '23505') { skipped.push(dt); continue; } // race : réservé entre-temps
+          throw e;
+        }
       }
       if (!created.length) return send(409, { message: 'Cette place est déjà réservée pour cette date' });
 
@@ -438,6 +457,7 @@ const server = http.createServer(async (req, res) => {
     if (checkInM && method === 'PATCH') {
       const [bk] = await q('SELECT * FROM bookings WHERE id=$1', [checkInM[1]]);
       if (!bk) return send(404, { message: 'Réservation introuvable' });
+      if (bk.status !== 'RESERVED') return send(409, { message: `Check-in impossible (statut ${bk.status})` });
       await q(`UPDATE bookings SET status='OCCUPIED',checked_in=true,checked_in_at=$1 WHERE id=$2`, [new Date().toISOString(), bk.id]);
       const [upd] = await q('SELECT * FROM bookings WHERE id=$1', [bk.id]);
       return send(200, await withRelations(upd));
@@ -447,7 +467,8 @@ const server = http.createServer(async (req, res) => {
     if (releaseM && method === 'PATCH') {
       const [bk] = await q('SELECT * FROM bookings WHERE id=$1', [releaseM[1]]);
       if (!bk) return send(404, { message: 'Réservation introuvable' });
-      await q(`UPDATE bookings SET status='RELEASED',released_at=$1 WHERE id=$2`, [new Date().toISOString(), bk.id]);
+      if (!['RESERVED','OCCUPIED'].includes(bk.status)) return send(409, { message: `Libération impossible (statut ${bk.status})` });
+      await q(`UPDATE bookings SET status='RELEASED',released_at=$1,checked_in=false WHERE id=$2`, [new Date().toISOString(), bk.id]);
       const [upd] = await q('SELECT * FROM bookings WHERE id=$1', [bk.id]);
       return send(200, await withRelations(upd));
     }
@@ -461,10 +482,15 @@ const server = http.createServer(async (req, res) => {
       const { date, startTime, endTime } = await getBody();
       if (!date || !startTime || !endTime) return send(400, { message: 'Champs obligatoires manquants' });
       if (startTime >= endTime) return send(400, { message: "L'heure de début doit être avant l'heure de fin" });
-      const [conflict] = await q(`SELECT id FROM bookings WHERE spot_id=$1 AND status!='CANCELLED' AND id!=$2
+      const [conflict] = await q(`SELECT id FROM bookings WHERE spot_id=$1 AND status NOT IN ('CANCELLED','RELEASED') AND id!=$2
         AND (date=$3 OR (is_indefinite=true AND date<=$3))`, [bk.spot_id, bk.id, date]);
       if (conflict) return send(409, { message: 'Conflit de réservation sur cette date' });
-      await q(`UPDATE bookings SET date=$1,start_time=$2,end_time=$3 WHERE id=$4`, [date, startTime, endTime, bk.id]);
+      try {
+        await q(`UPDATE bookings SET date=$1,start_time=$2,end_time=$3 WHERE id=$4`, [date, startTime, endTime, bk.id]);
+      } catch (e) {
+        if (e.code === '23505') return send(409, { message: 'Conflit de réservation sur cette date' });
+        throw e;
+      }
       const [upd] = await q('SELECT * FROM bookings WHERE id=$1', [bk.id]);
       return send(200, await withRelations(upd));
     }
@@ -491,23 +517,43 @@ const server = http.createServer(async (req, res) => {
       const [spot] = await q('SELECT * FROM spots WHERE id=$1', [spotId]);
       if (!spot) return send(404, { message: 'Place introuvable' });
       if (isIndefinite) {
-        if (await hasConflict(spotId, startDate)) return send(409, { message: `Conflit : la place ${spot.number} est déjà occupée` });
-        const id = `bk${Date.now()}`;
-        await q(`INSERT INTO bookings (id,spot_id,date,start_time,end_time,status,user_id,source,vehicle_label,is_indefinite,admin_note,checked_in,created_at)
-                 VALUES ($1,$2,$3,$4,null,'BLOCKED',$5,'ADMIN',$6,true,$7,false,$8)`,
-          [id, spotId, startDate, startTime??'07:00', userId??null, vehicleLabel??null, adminNote??null, new Date().toISOString()]);
+        if (!startDate) return send(400, { message: 'Date de début requise' });
+        // Un blocage indéfini couvre toutes les dates >= startDate : rejeter s'il existe
+        // une réservation active à cette date OU après (sinon écrasement silencieux).
+        const [future] = await q(`SELECT id FROM bookings WHERE spot_id=$1 AND status NOT IN ('CANCELLED','RELEASED')
+          AND (is_indefinite=true OR date >= $2)`, [spotId, startDate]);
+        if (future) return send(409, { message: `Conflit : la place ${spot.number} a déjà une réservation à partir de cette date` });
+        const id = newId('bk');
+        try {
+          await q(`INSERT INTO bookings (id,spot_id,date,start_time,end_time,status,user_id,source,vehicle_label,is_indefinite,admin_note,checked_in,created_at)
+                   VALUES ($1,$2,$3,$4,null,'BLOCKED',$5,'ADMIN',$6,true,$7,false,$8)`,
+            [id, spotId, startDate, startTime??'07:00', userId??null, vehicleLabel??null, adminNote??null, new Date().toISOString()]);
+        } catch (e) {
+          if (e.code === '23505') return send(409, { message: `Conflit : la place ${spot.number} est déjà occupée` });
+          throw e;
+        }
         const [bk] = await q('SELECT * FROM bookings WHERE id=$1', [id]);
         return send(201, [await withRelations(bk)]);
       }
       const dates = datesBetween(startDate, endDate || startDate);
       for (const d of dates)
         if (await hasConflict(spotId, d)) return send(409, { message: `Conflit le ${d} : la place ${spot.number} est déjà occupée` });
-      const created = [];
+      const created = [], createdIds = [];
       for (const d of dates) {
-        const id = `bk${Date.now()}${Math.random().toString(36).slice(2,5)}`;
-        await q(`INSERT INTO bookings (id,spot_id,date,start_time,end_time,status,user_id,source,vehicle_label,is_indefinite,admin_note,checked_in,created_at)
-                 VALUES ($1,$2,$3,$4,$5,'OCCUPIED',$6,'ADMIN',$7,false,$8,false,$9)`,
-          [id, spotId, d, startTime, endTime, userId??null, vehicleLabel??null, adminNote??null, new Date().toISOString()]);
+        const id = newId('bk');
+        try {
+          await q(`INSERT INTO bookings (id,spot_id,date,start_time,end_time,status,user_id,source,vehicle_label,is_indefinite,admin_note,checked_in,created_at)
+                   VALUES ($1,$2,$3,$4,$5,'OCCUPIED',$6,'ADMIN',$7,false,$8,false,$9)`,
+            [id, spotId, d, startTime, endTime, userId??null, vehicleLabel??null, adminNote??null, new Date().toISOString()]);
+        } catch (e) {
+          if (e.code === '23505') {
+            // Race en cours de boucle : on nettoie les jours déjà insérés pour ne pas laisser d'orphelins
+            if (createdIds.length) await q(`DELETE FROM bookings WHERE id = ANY($1)`, [createdIds]);
+            return send(409, { message: `Conflit le ${d} : la place ${spot.number} est déjà occupée` });
+          }
+          throw e;
+        }
+        createdIds.push(id);
         const [bk] = await q('SELECT * FROM bookings WHERE id=$1', [id]);
         created.push(await withRelations(bk));
       }
@@ -529,10 +575,24 @@ const server = http.createServer(async (req, res) => {
       if (!bk) return send(404, { message: 'Réservation introuvable' });
       if (method === 'PATCH') {
         const data = await getBody();
+        // Anti-chevauchement : si la date ou la place change, vérifier le conflit AVANT l'UPDATE.
+        // (l'index unique ne couvre pas le recouvrement avec un blocage indéfini couvrant une plage.)
+        const tSpot = data.spotId ?? bk.spot_id;
+        const tDate = data.date ?? bk.date;
+        const tStatus = data.status ?? bk.status;
+        if ((data.date || data.spotId) && tDate && !['CANCELLED','RELEASED'].includes(tStatus)) {
+          const [conflict] = await q(`SELECT id FROM bookings WHERE spot_id=$1 AND status NOT IN ('CANCELLED','RELEASED') AND id!=$2
+            AND (date=$3 OR (is_indefinite=true AND date<=$3))`, [tSpot, bk.id, tDate]);
+          if (conflict) return send(409, { message: 'Conflit : la place est déjà occupée à cette date' });
+        }
         const fm = { spotId:'spot_id', date:'date', startTime:'start_time', endTime:'end_time', status:'status', userId:'user_id', vehicleLabel:'vehicle_label', isIndefinite:'is_indefinite', adminNote:'admin_note' };
         const sets = [], params = [];
         Object.entries(data).forEach(([k,v]) => { if (fm[k]) { params.push(v); sets.push(`${fm[k]}=$${params.length}`); } });
-        if (sets.length) { params.push(bk.id); await q(`UPDATE bookings SET ${sets.join(',')} WHERE id=$${params.length}`, params); }
+        if (sets.length) {
+          params.push(bk.id);
+          try { await q(`UPDATE bookings SET ${sets.join(',')} WHERE id=$${params.length}`, params); }
+          catch (e) { if (e.code === '23505') return send(409, { message: 'Conflit : une réservation active existe déjà sur cette place à cette date' }); throw e; }
+        }
         const [upd] = await q('SELECT * FROM bookings WHERE id=$1', [bk.id]);
         return send(200, await withRelations(upd));
       }
@@ -558,7 +618,7 @@ const server = http.createServer(async (req, res) => {
       const [existing] = await q('SELECT id FROM users WHERE email=$1', [email]);
       if (existing) return send(409, { message: `L'email "${email}" est déjà utilisé` });
       const token = generateToken();
-      const id = `u${Date.now()}`;
+      const id = newId('u');
       await q(`INSERT INTO users (id,name,email,access_id,pin,role,locale,active,status,activation_token)
                VALUES ($1,$2,$3,$4,null,$5,$6,$7,'PENDING',$8)`,
         [id, name, email, email.split('@')[0].slice(0,8).toUpperCase(), role??'USER', locale??'fr', active!==false, token]);
@@ -626,6 +686,7 @@ const server = http.createServer(async (req, res) => {
     send(404, { message: `Route inconnue: ${method} ${path}` });
 
   } catch (err) {
+    if (err.message === 'JSON invalide') return send(400, { message: 'Corps de requête JSON invalide' });
     console.error('[ERROR]', err.message);
     send(500, { message: 'Erreur serveur interne' });
   }
@@ -639,7 +700,7 @@ initDb()
       console.log('  ✅  BoxBox Parking — PostgreSQL');
       console.log(`  📡  http://localhost:${PORT}`);
       console.log('');
-      console.log('  Comptes: admin@dxc.com/0000 · jean.dupont@dxc.com/1234');
+      if (process.env.ADMIN_EMAIL) console.log(`  Admin géré : ${process.env.ADMIN_EMAIL.trim().toLowerCase()}`);
       console.log('');
     });
   })

@@ -10,14 +10,14 @@ import type { BookingWithSpot } from '../types/api.types';
 type PeriodFilter = 'ALL' | 'UPCOMING' | 'PAST';
 
 const STATUS_LABELS: Record<string, string> = {
-  PENDING: 'En attente', CONFIRMED: 'Confirmée',
-  HELD: 'Retenue', OCCUPIED: 'En cours',
+  PENDING: 'En attente', CONFIRMED: 'Confirmée', RESERVED: 'Réservée',
+  HELD: 'Retenue', OCCUPIED: 'En cours', BLOCKED: 'Bloquée',
   RELEASED: 'Libérée', CANCELLED: 'Annulée', NO_SHOW: 'Absent',
 };
 
 const STATUS_COLORS: Record<string, string> = {
-  PENDING: '#f59e0b', CONFIRMED: '#3b82f6',
-  HELD: '#ca8a04', OCCUPIED: '#16a34a',
+  PENDING: '#f59e0b', CONFIRMED: '#3b82f6', RESERVED: '#3b82f6',
+  HELD: '#ca8a04', OCCUPIED: '#16a34a', BLOCKED: '#6b7280',
   RELEASED: '#6b7280', CANCELLED: '#dc2626', NO_SHOW: '#9ca3af',
 };
 
@@ -64,7 +64,9 @@ export function HistoryPage() {
     }
   }
 
-  const canModify = (b: BookingWithSpot) => ['PENDING', 'CONFIRMED', 'HELD'].includes(b.status);
+  // Boutons Modifier/Annuler : uniquement sur ses propres réservations à venir (statut RESERVED).
+  // Côté admin, l'édition passe par le Planning (AdminBookingModal), qui cible les bons endpoints.
+  const canModify = (b: BookingWithSpot) => !isAdmin && b.status === 'RESERVED';
   const canCancel = canModify;
 
   /* ── filtrage + tri (vue admin) ── */

@@ -129,6 +129,7 @@ export interface AdminBookingPayload {
   spotId: string;
   startDate: string;
   endDate?: string;
+  date?: string; // édition d'une résa unique : le PATCH admin mappe `date` (pas startDate)
   startTime: string;
   endTime?: string | null;
   userId?: string;

@@ -4,7 +4,7 @@ const http       = require('http');
 const fs         = require('fs');
 const nodePath   = require('path');
 const crypto     = require('crypto');
-const nodemailer = require('nodemailer');
+const { sendMail } = require('./mail');
 const { Pool }   = require('pg');
 
 // ─── Load .env ────────────────────────────────────────────────────────────────
@@ -24,25 +24,15 @@ function loadEnv() {
 loadEnv();
 
 // ─── Email ────────────────────────────────────────────────────────────────────
-const mailTransporter = nodemailer.createTransport({
-  host:   process.env.MAIL_HOST || 'smtp.office365.com',
-  port:   parseInt(process.env.MAIL_PORT || '587'),
-  secure: false,
-  auth: { user: process.env.MAIL_USER, pass: process.env.MAIL_PASS },
-  tls: { minVersion: 'TLSv1.2' },
-});
-const MAIL_ENABLED = !!(process.env.MAIL_USER && process.env.MAIL_PASS && process.env.MAIL_PASS !== 'MOT_DE_PASSE_ICI');
+// Envoi via noreplyrise@rise.fo (Microsoft Graph, voir mail.js + render.yaml).
+// Envoi réel par défaut, sans verrou : si les credentials manquent, sendMail
+// lève une erreur qui est loguée ci-dessous — pas de mode "log silencieux".
 
 async function sendActivationMail(toEmail, toName, token) {
   const activationUrl = `${process.env.APP_URL || 'http://localhost:5174'}/?activate=${token}`;
-  if (!MAIL_ENABLED) {
-    console.log(`[MAIL] ⚠️  Email désactivé — Lien : ${activationUrl}`);
-    return;
-  }
   const firstName = toName.split(' ')[0];
   try {
-    await mailTransporter.sendMail({
-      from:    process.env.MAIL_FROM || `"BoxBox" <${process.env.MAIL_USER}>`,
+    await sendMail({
       to:      toEmail,
       subject: "🅿️ Votre accès à l'application Parking",
       html: `
@@ -76,17 +66,12 @@ async function sendActivationMail(toEmail, toName, token) {
 
 // kind: 'CONFIRMED' | 'CANCELLED' — dates: tableau de 'YYYY-MM-DD'
 async function sendBookingMail(toEmail, toName, kind, spotNumber, dates, startTime, endTime) {
-  if (!MAIL_ENABLED) {
-    console.log(`[MAIL] ⚠️  Email désactivé — ${kind} place ${spotNumber} (${dates.join(', ')}) pour ${toEmail}`);
-    return;
-  }
   const firstName = toName.split(' ')[0];
   const fmtDate = (iso) => new Date(iso + 'T00:00:00').toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
   const isCancel = kind === 'CANCELLED';
   const dateLines = dates.map(d => `<li style="margin:2px 0;">${fmtDate(d)}</li>`).join('');
   try {
-    await mailTransporter.sendMail({
-      from:    process.env.MAIL_FROM || `"BoxBox" <${process.env.MAIL_USER}>`,
+    await sendMail({
       to:      toEmail,
       subject: isCancel
         ? `🅿️ Réservation annulée — place ${spotNumber}`

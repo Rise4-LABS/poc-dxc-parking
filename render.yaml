@@ -10,3 +10,8 @@ services:
         value: production
       - key: NODE_VERSION
         value: 20
+      - key: APP_URL
+        value: https://poc-dxc-parking.onrender.com
+      # Credentials d'envoi de mail via noreplyrise@rise.fo (Microsoft Graph).
+      # Fournit MAIL_TENANT_ID / MAIL_CLIENT_ID / MAIL_CLIENT_SECRET / MAIL_SENDER.
+      - fromGroup: noreplyrise-mail

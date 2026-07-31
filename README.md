@@ -53,3 +53,13 @@ Render redéploie automatiquement en 2-3 minutes.
 ### Variables d'environnement utilisées
 - `PORT` : port d'écoute du serveur (fourni automatiquement par Render)
 - `NODE_ENV` : environnement (`production` sur Render)
+- `APP_URL` : URL publique de l'app, utilisée dans les liens d'activation des emails
+- `MAIL_TENANT_ID` / `MAIL_CLIENT_ID` / `MAIL_CLIENT_SECRET` / `MAIL_SENDER` : credentials d'envoi de mail via `noreplyrise@rise.fo` (Microsoft Graph). Fournis par l'env group Render partagé `noreplyrise-mail` (jamais de valeur en clair dans le repo).
+
+### Envoi de mails — écart avec la spec initiale (tranché par Claude)
+- Le POC envoie des mails à deux moments : **activation de compte** (création / renvoi d'invitation par un admin) et **réservation** (confirmation / annulation).
+- L'implémentation d'origine était un **mailer maison** (`nodemailer` + SMTP Office365) piloté par `MAIL_USER`/`MAIL_PASS`/`MAIL_HOST`/`MAIL_FROM`, avec un verrou `MAIL_ENABLED` qui, une fois faux, **loggait sans jamais envoyer** (mails perdus en silence). Le `.env.example` prévoyait de son côté **Postmark** (`POSTMARK_API_KEY`).
+- Remplacée par la **seule voie autorisée dans l'écosystème Rise** : Microsoft Graph via la boîte partagée `noreplyrise@rise.fo` (`mail.js` + env group `noreplyrise-mail`). Envoi **réel par défaut, sans verrou** ; en cas d'échec, l'erreur est loggée. Les dépendances `nodemailer` et `postmark` du `package.json` sont désormais **inutilisées** (à retirer lors d'un nettoyage).
+
+### ⚠️ Point de sécurité à traiter avant prod (lié au mail)
+- Les routes `/api/admin/*` (dont la création d'utilisateur qui déclenche le mail d'activation) **ne vérifient pas l'authentification ni le rôle** dans `mock-server.js`. En l'état, un tiers pourrait déclencher l'envoi de mails d'activation vers des adresses arbitraires. Acceptable pour une démo interne fermée, **à sécuriser (auth + contrôle de rôle) avant toute ouverture** — sinon risque d'usage abusif de la boîte d'envoi et d'exposition de données personnelles (RGPD).

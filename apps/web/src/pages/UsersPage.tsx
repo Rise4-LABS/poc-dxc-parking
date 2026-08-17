@@ -5,10 +5,15 @@ import { Spinner } from '../components/Spinner';
 import { UserModal } from '../components/UserModal';
 import type { User } from '../types/api.types';
 
-const ROLE_LABELS: Record<string, { label: string; color: string; bg: string }> = {
-  SUPER_ADMIN: { label: 'Super Admin', color: '#7c3aed', bg: '#f5f3ff' },
-  ADMIN:       { label: 'Admin',       color: '#1d4ed8', bg: '#eff6ff' },
-  USER:        { label: 'Utilisateur', color: '#374151', bg: '#f3f4f6' },
+const ROLE_BADGE: Record<string, string> = {
+  SUPER_ADMIN: 'badge--info',
+  ADMIN: 'badge--info',
+  USER: 'badge--neutral',
+};
+const ROLE_LABEL: Record<string, string> = {
+  SUPER_ADMIN: 'Super Admin',
+  ADMIN: 'Admin',
+  USER: 'Utilisateur',
 };
 
 function buildActivationLink(token: string) {
@@ -19,6 +24,7 @@ function CopyLinkButton({ token }: { token: string }) {
   const [copied, setCopied] = useState(false);
   return (
     <button
+      className="btn btn--ghost btn--sm"
       onClick={(e) => {
         e.stopPropagation();
         void navigator.clipboard.writeText(buildActivationLink(token));
@@ -26,25 +32,16 @@ function CopyLinkButton({ token }: { token: string }) {
         setTimeout(() => setCopied(false), 2000);
       }}
       title={buildActivationLink(token)}
-      style={{
-        display: 'inline-flex', alignItems: 'center', gap: '4px',
-        padding: '4px 10px',
-        border: `1px solid ${copied ? '#86efac' : '#fde68a'}`,
-        borderRadius: '20px',
-        background: copied ? '#f0fdf4' : '#fffbeb',
-        color: copied ? '#16a34a' : '#92400e',
-        fontSize: '11px', fontWeight: 600, cursor: 'pointer',
-        whiteSpace: 'nowrap',
-      }}
+      style={{ fontSize: 'var(--fs-xs)', padding: '4px 10px' }}
     >
-      {copied ? '✓ Copié' : '📋 Lien d\'activation'}
+      {copied ? '✓ Copié' : '🔗 Lien d’activation'}
     </button>
   );
 }
 
 export function UsersPage() {
-  const [users,     setUsers]     = useState<User[]>([]);
-  const [loading,   setLoading]   = useState(true);
+  const [users, setUsers] = useState<User[]>([]);
+  const [loading, setLoading] = useState(true);
   const [modalUser, setModalUser] = useState<User | null | undefined>(undefined); // undefined = fermé, null = création
   const { addToast } = useUiStore();
 
@@ -61,222 +58,91 @@ export function UsersPage() {
 
   useEffect(() => { void load(); }, [load]);
 
-  /* ── styles ── */
-  const th: React.CSSProperties = {
-    padding: '10px 14px', textAlign: 'left',
-    fontSize: '11px', fontWeight: 700, color: 'var(--color-text-muted)',
-    textTransform: 'uppercase', letterSpacing: '0.06em',
-    background: 'var(--color-surface-2)', borderBottom: '1px solid var(--color-border)',
-    whiteSpace: 'nowrap',
-  };
-  const td: React.CSSProperties = {
-    padding: '12px 14px', borderBottom: '1px solid var(--color-border)',
-    fontSize: '14px', verticalAlign: 'middle',
-  };
-
-  const pendingCount = users.filter(u => u.status === 'PENDING').length;
+  const pendingCount = users.filter((u) => u.status === 'PENDING').length;
+  const activeCount = users.filter((u) => u.status === 'ACTIVE' && u.active !== false).length;
 
   return (
-    <div style={{ padding: '16px' }}>
-
-      {/* ── Header ── */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-          <h1 style={{ margin: 0, fontSize: '20px', fontWeight: 700 }}>Utilisateurs</h1>
-          {pendingCount > 0 && (
-            <span style={{
-              padding: '3px 9px', borderRadius: '20px',
-              background: '#fffbeb', color: '#92400e',
-              border: '1px solid #fde68a',
-              fontSize: '12px', fontWeight: 600,
-            }}>
-              ⏳ {pendingCount} en attente
-            </span>
-          )}
+    <div className="page">
+      <div className="page__header">
+        <div>
+          <h1 className="page__title">Utilisateurs</h1>
+          <p className="page__subtitle">Gérez les comptes, les rôles et les accès.</p>
         </div>
-        <button
-          onClick={() => setModalUser(null)}
-          style={{
-            display: 'flex', alignItems: 'center', gap: '6px',
-            padding: '9px 16px', background: 'var(--color-primary)', color: '#fff',
-            border: 'none', borderRadius: '8px', fontSize: '14px', fontWeight: 600, cursor: 'pointer',
-          }}
-        >
-          + Nouvel utilisateur
+        <button className="btn btn--primary" onClick={() => setModalUser(null)}>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" /></svg>
+          Nouvel utilisateur
         </button>
       </div>
 
       {loading ? (
-        <div style={{ display: 'flex', justifyContent: 'center', padding: '60px 0' }}>
-          <Spinner size={36} />
-        </div>
+        <div style={{ display: 'flex', justifyContent: 'center', padding: '60px 0' }}><Spinner size={36} /></div>
       ) : (
-        <div style={{ borderRadius: '10px', border: '1px solid var(--color-border)', overflow: 'hidden' }}>
-          <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-            <thead>
-              <tr>
-                <th style={th}>Nom complet</th>
-                <th style={{ ...th, textAlign: 'center' }}>Trigramme</th>
-                <th style={th}>Email</th>
-                <th style={th}>Profil</th>
-                <th style={{ ...th, textAlign: 'center' }}>Statut</th>
-                <th style={{ ...th, textAlign: 'center' }}>Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {users.length === 0 ? (
+        <div className="card">
+          <div className="card__header">
+            <div className="card__title">
+              {users.length} utilisateur{users.length !== 1 ? 's' : ''}
+            </div>
+            <div style={{ display: 'flex', gap: 8 }}>
+              <span className="badge badge--success">{activeCount} actif{activeCount !== 1 ? 's' : ''}</span>
+              {pendingCount > 0 && <span className="badge badge--warning">{pendingCount} en attente</span>}
+            </div>
+          </div>
+
+          <div className="table-wrap">
+            <table className="data-table">
+              <thead>
                 <tr>
-                  <td colSpan={6} style={{ ...td, textAlign: 'center', color: 'var(--color-text-muted)', padding: '40px' }}>
-                    Aucun utilisateur
-                  </td>
+                  <th>Nom complet</th>
+                  <th style={{ textAlign: 'center' }}>Trigramme</th>
+                  <th>Email</th>
+                  <th>Profil</th>
+                  <th style={{ textAlign: 'center' }}>Statut</th>
+                  <th style={{ textAlign: 'right' }}>Actions</th>
                 </tr>
-              ) : users.map((u, idx) => {
-                const roleInfo = ROLE_LABELS[u.role] ?? ROLE_LABELS.USER;
-                const isActive = u.active !== false;
-                const isPending = u.status === 'PENDING';
-                const isEven = idx % 2 === 0;
-
-                return (
-                  <tr
-                    key={u.id}
-                    style={{
-                      background: isPending
-                        ? '#fffdf0'
-                        : !isActive
-                          ? '#fff5f5'
-                          : isEven
-                            ? 'var(--color-surface)'
-                            : 'var(--color-surface-2)',
-                    }}
-                  >
-                    {/* Nom */}
-                    <td style={td}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                        <span style={{
-                          width: '34px', height: '34px', borderRadius: '50%',
-                          background: isPending ? '#fde68a' : isActive ? 'var(--color-primary)' : '#e5e7eb',
-                          color: isPending ? '#92400e' : isActive ? '#fff' : '#9ca3af',
-                          display: 'flex', alignItems: 'center', justifyContent: 'center',
-                          fontSize: '13px', fontWeight: 700, flexShrink: 0,
-                        }}>
-                          {u.name.charAt(0).toUpperCase()}
-                        </span>
-                        <span style={{ fontWeight: 600, color: isActive ? 'var(--color-text)' : '#9ca3af' }}>
-                          {u.name}
-                        </span>
-                      </div>
-                    </td>
-
-                    {/* Trigramme */}
-                    <td style={{ ...td, textAlign: 'center' }}>
-                      {u.trigram ? (
-                        <span style={{
-                          display: 'inline-block',
-                          padding: '3px 8px', borderRadius: '6px',
-                          background: 'var(--color-surface-2)', border: '1px solid var(--color-border)',
-                          fontSize: '12px', fontWeight: 700, letterSpacing: '0.08em',
-                          color: isActive ? 'var(--color-text)' : '#9ca3af',
-                          fontFamily: 'monospace',
-                        }}>
-                          {u.trigram}
-                        </span>
-                      ) : (
-                        <span style={{ color: 'var(--color-text-muted)', fontSize: '12px' }}>—</span>
-                      )}
-                    </td>
-
-                    {/* Email */}
-                    <td style={td}>
-                      <span style={{
-                        fontSize: '13px',
-                        color: isActive ? 'var(--color-text-muted)' : '#9ca3af',
-                      }}>
-                        {u.email ?? '—'}
-                      </span>
-                    </td>
-
-                    {/* Profil */}
-                    <td style={td}>
-                      <span style={{
-                        display: 'inline-block',
-                        padding: '3px 10px', borderRadius: '20px',
-                        background: roleInfo.bg, color: roleInfo.color,
-                        fontSize: '12px', fontWeight: 600,
-                      }}>
-                        {roleInfo.label}
-                      </span>
-                    </td>
-
-                    {/* Statut */}
-                    <td style={{ ...td, textAlign: 'center' }}>
-                      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '6px' }}>
-                        {isPending ? (
-                          <span style={{
-                            display: 'inline-flex', alignItems: 'center', gap: '5px',
-                            padding: '4px 10px', borderRadius: '20px', fontSize: '12px', fontWeight: 600,
-                            background: '#fffbeb', color: '#92400e',
-                            border: '1px solid #fde68a',
-                          }}>
-                            ⏳ En attente
+              </thead>
+              <tbody>
+                {users.length === 0 ? (
+                  <tr><td colSpan={6}><div className="empty-state"><div className="empty-state__icon">👥</div>Aucun utilisateur</div></td></tr>
+                ) : users.map((u) => {
+                  const isActive = u.active !== false;
+                  const isPending = u.status === 'PENDING';
+                  return (
+                    <tr key={u.id}>
+                      <td>
+                        <div className="cell-user">
+                          <span className={`avatar avatar--sm${isPending ? ' avatar--muted' : (u.role !== 'USER' ? ' avatar--admin' : '')}`}>
+                            {u.name.charAt(0).toUpperCase()}
                           </span>
-                        ) : (
-                          <span style={{
-                            display: 'inline-flex', alignItems: 'center', gap: '5px',
-                            padding: '4px 10px', borderRadius: '20px', fontSize: '12px', fontWeight: 600,
-                            background: isActive ? '#dcfce7' : '#fee2e2',
-                            color: isActive ? '#16a34a' : '#dc2626',
-                          }}>
-                            <span style={{
-                              width: '6px', height: '6px', borderRadius: '50%',
-                              background: isActive ? '#16a34a' : '#dc2626',
-                              display: 'inline-block',
-                            }} />
-                            {isActive ? 'Actif' : 'Inactif'}
-                          </span>
-                        )}
-                        {/* Bouton copier lien pour les users en attente */}
-                        {isPending && u.activationToken && (
-                          <CopyLinkButton token={u.activationToken} />
-                        )}
-                      </div>
-                    </td>
-
-                    {/* Actions */}
-                    <td style={{ ...td, textAlign: 'center' }}>
-                      <button
-                        onClick={() => setModalUser(u)}
-                        style={{
-                          padding: '7px 14px',
-                          border: '1px solid var(--color-border)',
-                          borderRadius: '7px',
-                          background: 'var(--color-surface)',
-                          color: 'var(--color-text)',
-                          fontSize: '13px', fontWeight: 600, cursor: 'pointer',
-                        }}
-                      >
-                        ✏️ Modifier
-                      </button>
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-
-          {/* Footer count */}
-          <div style={{
-            padding: '10px 14px',
-            background: 'var(--color-surface-2)',
-            borderTop: '1px solid var(--color-border)',
-            fontSize: '12px', color: 'var(--color-text-muted)',
-          }}>
-            {users.length} utilisateur{users.length !== 1 ? 's' : ''} —{' '}
-            {users.filter(u => u.status === 'ACTIVE' && u.active !== false).length} actif{users.filter(u => u.status === 'ACTIVE' && u.active !== false).length !== 1 ? 's' : ''}{pendingCount > 0 ? ` · ${pendingCount} en attente d'activation` : ''}
+                          <span className="cell-strong" style={!isActive ? { color: 'var(--color-text-subtle)' } : undefined}>{u.name}</span>
+                        </div>
+                      </td>
+                      <td style={{ textAlign: 'center' }}>
+                        {u.trigram
+                          ? <span style={{ padding: '3px 8px', borderRadius: 6, background: 'var(--color-surface-3)', border: '1px solid var(--color-border)', fontSize: 'var(--fs-xs)', fontWeight: 700, letterSpacing: '.08em', fontFamily: 'ui-monospace, monospace' }}>{u.trigram}</span>
+                          : <span className="cell-muted">—</span>}
+                      </td>
+                      <td className="cell-muted">{u.email ?? '—'}</td>
+                      <td><span className={`badge ${ROLE_BADGE[u.role] ?? 'badge--neutral'}`}>{ROLE_LABEL[u.role] ?? u.role}</span></td>
+                      <td style={{ textAlign: 'center' }}>
+                        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6 }}>
+                          {isPending
+                            ? <span className="badge badge--warning">En attente</span>
+                            : <span className={`badge ${isActive ? 'badge--success' : 'badge--danger'}`}>{isActive ? 'Actif' : 'Inactif'}</span>}
+                          {isPending && u.activationToken && <CopyLinkButton token={u.activationToken} />}
+                        </div>
+                      </td>
+                      <td style={{ textAlign: 'right' }}>
+                        <button className="btn btn--ghost btn--sm" onClick={() => setModalUser(u)}>Modifier</button>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
           </div>
         </div>
       )}
 
-      {/* ── Modal ── */}
       <UserModal
         open={modalUser !== undefined}
         user={modalUser ?? null}

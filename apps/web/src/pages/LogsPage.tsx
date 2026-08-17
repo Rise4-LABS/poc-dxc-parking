@@ -5,13 +5,13 @@ import { Spinner } from '../components/Spinner';
 import type { AuditLog, LogAction } from '../types/api.types';
 
 /* ─── Config des actions ────────────────────────────────────────────────────── */
-const ACTION_CONFIG: Record<LogAction, { label: string; icon: string; color: string; bg: string }> = {
-  LOGIN:        { label: 'Connexion',        icon: '🟢', color: '#15803d', bg: '#dcfce7' },
-  LOGIN_FAILED: { label: 'Échec connexion',  icon: '🔴', color: '#dc2626', bg: '#fee2e2' },
-  LOGOUT:       { label: 'Déconnexion',      icon: '⚪', color: '#6b7280', bg: '#f3f4f6' },
-  USER_CREATED: { label: 'Utilisateur créé', icon: '🔵', color: '#1d4ed8', bg: '#dbeafe' },
-  USER_UPDATED: { label: 'Utilisateur modifié', icon: '🟡', color: '#b45309', bg: '#fef9c3' },
-  USER_DELETED: { label: 'Utilisateur supprimé', icon: '🗑', color: '#7c2d12', bg: '#fee2e2' },
+const ACTION_CONFIG: Record<LogAction, { label: string; badge: string }> = {
+  LOGIN:        { label: 'Connexion',            badge: 'badge--info' },
+  LOGIN_FAILED: { label: 'Échec connexion',      badge: 'badge--danger' },
+  LOGOUT:       { label: 'Déconnexion',          badge: 'badge--neutral' },
+  USER_CREATED: { label: 'Utilisateur créé',     badge: 'badge--success' },
+  USER_UPDATED: { label: 'Utilisateur modifié',  badge: 'badge--warning' },
+  USER_DELETED: { label: 'Utilisateur supprimé', badge: 'badge--danger' },
 };
 
 const FILTER_OPTIONS: { key: 'ALL' | LogAction; label: string }[] = [
@@ -66,68 +66,19 @@ export function LogsPage() {
     return true;
   });
 
-  /* ── styles ── */
-  const th: React.CSSProperties = {
-    padding: '10px 14px', textAlign: 'left',
-    fontSize: '11px', fontWeight: 700, color: 'var(--color-text-muted)',
-    textTransform: 'uppercase', letterSpacing: '0.06em',
-    background: 'var(--color-surface-2)', borderBottom: '1px solid var(--color-border)',
-    whiteSpace: 'nowrap',
-  };
-  const td: React.CSSProperties = {
-    padding: '11px 14px', borderBottom: '1px solid var(--color-border)',
-    fontSize: '13px', verticalAlign: 'middle',
-  };
-
   return (
-    <div style={{ padding: '16px' }}>
+    <div className="page">
 
       {/* ── Header ── */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', flexWrap: 'wrap', gap: '10px' }}>
-        <h1 style={{ margin: 0, fontSize: '20px', fontWeight: 700 }}>Logs d'activité</h1>
-        <button
-          onClick={() => void load()}
-          style={{ padding: '8px 14px', border: '1px solid var(--color-border)', borderRadius: '8px', background: 'var(--color-surface)', fontSize: '13px', fontWeight: 600, cursor: 'pointer' }}
-        >
-          🔄 Actualiser
-        </button>
-      </div>
-
-      {/* ── Filtres ── */}
-      <div style={{ display: 'flex', gap: '8px', marginBottom: '12px', flexWrap: 'wrap', alignItems: 'center' }}>
-        {/* Filtre par type */}
-        <div style={{ display: 'flex', border: '1px solid var(--color-border)', borderRadius: '8px', overflow: 'hidden', flexShrink: 0 }}>
-          {FILTER_OPTIONS.map((opt, i, arr) => (
-            <button
-              key={opt.key}
-              onClick={() => setFilter(opt.key)}
-              style={{
-                padding: '6px 11px',
-                border: 'none',
-                borderRight: i < arr.length - 1 ? '1px solid var(--color-border)' : 'none',
-                background: filter === opt.key ? 'var(--color-primary)' : 'var(--color-surface)',
-                color: filter === opt.key ? '#fff' : 'var(--color-text)',
-                fontSize: '12px', fontWeight: 600, cursor: 'pointer', whiteSpace: 'nowrap',
-              }}
-            >
-              {opt.label}
-            </button>
-          ))}
+      <div className="page__header">
+        <div>
+          <h1 className="page__title">Logs d'activité</h1>
+          <p className="page__subtitle">Historique des connexions et actions de la session en cours.</p>
         </div>
-
-        {/* Recherche */}
-        <input
-          type="text"
-          value={search}
-          onChange={e => setSearch(e.target.value)}
-          placeholder="Rechercher par nom, identifiant…"
-          style={{
-            padding: '7px 12px', border: '1px solid var(--color-border)',
-            borderRadius: '8px', fontSize: '13px',
-            background: 'var(--color-surface)', color: 'var(--color-text)',
-            minWidth: '220px', flex: 1,
-          }}
-        />
+        <button className="btn btn--ghost" onClick={() => void load()}>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M23 4v6h-6" /><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10" /></svg>
+          Actualiser
+        </button>
       </div>
 
       {loading ? (
@@ -135,97 +86,115 @@ export function LogsPage() {
           <Spinner size={36} />
         </div>
       ) : (
-        <div style={{ borderRadius: '10px', border: '1px solid var(--color-border)', overflow: 'hidden' }}>
-          <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-            <thead>
-              <tr>
-                <th style={th}>Horodatage</th>
-                <th style={th}>Utilisateur</th>
-                <th style={th}>Identifiant</th>
-                <th style={th}>Action</th>
-                <th style={th}>Détail</th>
-              </tr>
-            </thead>
-            <tbody>
-              {filtered.length === 0 ? (
+        <div className="card">
+
+          {/* ── Toolbar : filtres + recherche ── */}
+          <div className="toolbar">
+            <div className="segmented">
+              {FILTER_OPTIONS.map(opt => (
+                <button
+                  key={opt.key}
+                  onClick={() => setFilter(opt.key)}
+                  className={filter === opt.key ? 'is-active' : ''}
+                >
+                  {opt.label}
+                </button>
+              ))}
+            </div>
+
+            <div className="input-search toolbar__grow">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" /></svg>
+              <input
+                className="input"
+                type="text"
+                value={search}
+                onChange={e => setSearch(e.target.value)}
+                placeholder="Rechercher par nom, identifiant…"
+              />
+            </div>
+          </div>
+
+          {/* ── Table ── */}
+          <div className="table-wrap">
+            <table className="data-table">
+              <thead>
                 <tr>
-                  <td colSpan={5} style={{ ...td, textAlign: 'center', color: 'var(--color-text-muted)', padding: '40px' }}>
-                    {logs.length === 0 ? 'Aucun événement enregistré pour cette session.' : 'Aucun résultat pour ce filtre.'}
-                  </td>
+                  <th>Action</th>
+                  <th>Utilisateur</th>
+                  <th>Identifiant</th>
+                  <th>Détail</th>
+                  <th style={{ textAlign: 'right' }}>Horodatage</th>
                 </tr>
-              ) : filtered.map(log => {
-                const cfg = ACTION_CONFIG[log.action] ?? { label: log.action, icon: '•', color: '#374151', bg: '#f3f4f6' };
-                return (
-                  <tr key={log.id} style={{ background: 'var(--color-surface)' }}>
-
-                    {/* Horodatage */}
-                    <td style={{ ...td, fontVariantNumeric: 'tabular-nums', color: 'var(--color-text-muted)', fontSize: '12px', whiteSpace: 'nowrap' }}>
-                      {formatDate(log.timestamp)}
-                    </td>
-
-                    {/* Utilisateur */}
-                    <td style={td}>
-                      {log.userName ? (
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                          <span style={{
-                            width: '28px', height: '28px', borderRadius: '50%',
-                            background: log.action === 'LOGIN_FAILED' ? '#fee2e2' : 'var(--color-primary)',
-                            color: log.action === 'LOGIN_FAILED' ? '#dc2626' : '#fff',
-                            display: 'flex', alignItems: 'center', justifyContent: 'center',
-                            fontSize: '11px', fontWeight: 700, flexShrink: 0,
-                          }}>
-                            {log.userName.charAt(0).toUpperCase()}
-                          </span>
-                          <span style={{ fontWeight: 500 }}>{log.userName}</span>
-                        </div>
-                      ) : (
-                        <span style={{ color: 'var(--color-text-muted)', fontStyle: 'italic' }}>—</span>
-                      )}
-                    </td>
-
-                    {/* Identifiant */}
-                    <td style={td}>
-                      {log.accessId ? (
-                        <code style={{
-                          background: 'var(--color-surface-2)', padding: '2px 7px',
-                          borderRadius: '5px', fontSize: '12px', fontWeight: 700,
-                        }}>
-                          {log.accessId}
-                        </code>
-                      ) : (
-                        <span style={{ color: 'var(--color-text-muted)' }}>—</span>
-                      )}
-                    </td>
-
-                    {/* Action */}
-                    <td style={td}>
-                      <span style={{
-                        display: 'inline-flex', alignItems: 'center', gap: '5px',
-                        padding: '3px 10px', borderRadius: '20px',
-                        background: cfg.bg, color: cfg.color,
-                        fontSize: '12px', fontWeight: 600, whiteSpace: 'nowrap',
-                      }}>
-                        {cfg.label}
-                      </span>
-                    </td>
-
-                    {/* Détail */}
-                    <td style={{ ...td, color: 'var(--color-text-muted)', fontSize: '12px' }}>
-                      {log.detail ?? '—'}
+              </thead>
+              <tbody>
+                {filtered.length === 0 ? (
+                  <tr>
+                    <td colSpan={5}>
+                      <div className="empty-state">
+                        <div className="empty-state__icon">📋</div>
+                        {logs.length === 0 ? 'Aucun événement enregistré pour cette session.' : 'Aucun résultat pour ce filtre.'}
+                      </div>
                     </td>
                   </tr>
-                );
-              })}
-            </tbody>
-          </table>
+                ) : filtered.map(log => {
+                  const cfg = ACTION_CONFIG[log.action] ?? { label: log.action, badge: 'badge--neutral' };
+                  return (
+                    <tr key={log.id}>
+
+                      {/* Action */}
+                      <td>
+                        <span className={`badge ${cfg.badge}`}>{cfg.label}</span>
+                      </td>
+
+                      {/* Utilisateur */}
+                      <td>
+                        {log.userName ? (
+                          <div className="cell-user">
+                            <span className={`avatar avatar--sm${log.action === 'LOGIN_FAILED' ? ' avatar--muted' : ''}`}>
+                              {log.userName.charAt(0).toUpperCase()}
+                            </span>
+                            <span className="cell-strong">{log.userName}</span>
+                          </div>
+                        ) : (
+                          <span className="cell-muted" style={{ fontStyle: 'italic' }}>—</span>
+                        )}
+                      </td>
+
+                      {/* Identifiant */}
+                      <td>
+                        {log.accessId ? (
+                          <code style={{
+                            background: 'var(--color-surface-3)', padding: '3px 8px',
+                            borderRadius: 'var(--radius-sm)', fontSize: 'var(--fs-xs)', fontWeight: 700,
+                            letterSpacing: '.04em', fontFamily: 'ui-monospace, monospace',
+                          }}>
+                            {log.accessId}
+                          </code>
+                        ) : (
+                          <span className="cell-muted">—</span>
+                        )}
+                      </td>
+
+                      {/* Détail */}
+                      <td className="cell-muted">{log.detail ?? '—'}</td>
+
+                      {/* Horodatage */}
+                      <td className="cell-muted" style={{ textAlign: 'right', fontVariantNumeric: 'tabular-nums', whiteSpace: 'nowrap', fontSize: 'var(--fs-sm)' }}>
+                        {formatDate(log.timestamp)}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
 
           {/* Footer */}
           <div style={{
-            padding: '10px 14px',
-            background: 'var(--color-surface-2)',
+            padding: 'var(--space-3) var(--space-5)',
             borderTop: '1px solid var(--color-border)',
-            fontSize: '12px', color: 'var(--color-text-muted)',
-            display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+            fontSize: 'var(--fs-sm)', color: 'var(--color-text-muted)',
+            display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 'var(--space-3)', flexWrap: 'wrap',
           }}>
             <span>
               {filtered.length} événement{filtered.length !== 1 ? 's' : ''} affiché{filtered.length !== 1 ? 's' : ''}

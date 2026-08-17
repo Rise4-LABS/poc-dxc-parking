@@ -21,6 +21,12 @@ const STATUS_COLORS: Record<string, string> = {
   RELEASED: '#6b7280', CANCELLED: '#dc2626', NO_SHOW: '#9ca3af',
 };
 
+const STATUS_BADGE: Record<string, string> = {
+  PENDING: 'badge--warning', CONFIRMED: 'badge--info', RESERVED: 'badge--info',
+  HELD: 'badge--warning', OCCUPIED: 'badge--success', BLOCKED: 'badge--neutral',
+  RELEASED: 'badge--neutral', CANCELLED: 'badge--danger', NO_SHOW: 'badge--neutral',
+};
+
 export function HistoryPage() {
   const [bookings,      setBookings]      = useState<BookingWithSpot[]>([]);
   const [loading,       setLoading]       = useState(true);
@@ -90,44 +96,43 @@ export function HistoryPage() {
   const periodChip = (key: PeriodFilter, label: string) => (
     <button
       key={key}
+      className={`chip${period === key ? ' is-active' : ''}`}
       onClick={() => setPeriod(key)}
-      style={{
-        padding: '6px 12px', borderRadius: '20px',
-        border: `1px solid ${period === key ? 'var(--color-primary)' : 'var(--color-border)'}`,
-        background: period === key ? 'var(--color-primary)' : 'var(--color-surface)',
-        color: period === key ? '#fff' : 'var(--color-text-muted)',
-        fontSize: '12px', fontWeight: 600, cursor: 'pointer', whiteSpace: 'nowrap',
-      }}
+      style={{ whiteSpace: 'nowrap' }}
     >
       {label}
     </button>
   );
 
   return (
-    <div style={{ padding: '16px', maxWidth: '600px', margin: '0 auto' }}>
-      <h1 style={{ margin: '0 0 20px', fontSize: '20px', fontWeight: 700 }}>
-        {isAdmin ? 'Historique des réservations' : 'Mes réservations'}
-      </h1>
+    <div className="page" style={{ maxWidth: '720px' }}>
+      <div className="page__header">
+        <div>
+          <h1 className="page__title">{isAdmin ? 'Historique des réservations' : 'Mes réservations'}</h1>
+          <p className="page__subtitle">
+            {isAdmin ? 'Toutes les réservations du parking.' : 'Vos réservations à venir et passées.'}
+          </p>
+        </div>
+      </div>
 
       {/* Filtres admin */}
       {isAdmin && !loading && bookings.length > 0 && (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginBottom: '16px' }}>
-          <input
-            type="search"
-            value={search}
-            onChange={e => setSearch(e.target.value)}
-            placeholder="🔍 Utilisateur, trigramme, place, véhicule…"
-            style={{
-              width: '100%', padding: '10px 14px', boxSizing: 'border-box',
-              border: '1px solid var(--color-border)', borderRadius: '8px',
-              fontSize: '14px', background: 'var(--color-surface)', color: 'var(--color-text)',
-            }}
-          />
-          <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-3)', marginBottom: 'var(--space-5)' }}>
+          <div className="input-search">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8" /><path d="m21 21-4.3-4.3" /></svg>
+            <input
+              className="input"
+              type="search"
+              value={search}
+              onChange={e => setSearch(e.target.value)}
+              placeholder="Utilisateur, trigramme, place, véhicule…"
+            />
+          </div>
+          <div style={{ display: 'flex', gap: 'var(--space-2)', alignItems: 'center' }}>
             {periodChip('ALL', 'Toutes')}
             {periodChip('UPCOMING', 'À venir')}
             {periodChip('PAST', 'Passées')}
-            <span style={{ marginLeft: 'auto', fontSize: '12px', color: 'var(--color-text-muted)' }}>
+            <span style={{ marginLeft: 'auto', fontSize: 'var(--fs-sm)', color: 'var(--color-text-muted)' }}>
               {displayed.length} résa{displayed.length !== 1 ? 's' : ''}
             </span>
           </div>
@@ -139,136 +144,91 @@ export function HistoryPage() {
           <Spinner size={36} />
         </div>
       ) : displayed.length === 0 ? (
-        <div style={{ textAlign: 'center', padding: '60px 24px', color: 'var(--color-text-muted)' }}>
-          <div style={{ fontSize: '52px', marginBottom: '16px', lineHeight: 1 }}>🅿️</div>
-          <p style={{ margin: '0 0 6px', fontWeight: 600, fontSize: '16px', color: 'var(--color-text)' }}>
-            Aucune réservation
-          </p>
-          <p style={{ margin: '0 0 24px', fontSize: '14px' }}>
-            {isAdmin && bookings.length > 0
-              ? 'Aucune réservation ne correspond aux filtres.'
-              : isAdmin
-                ? 'Aucune réservation enregistrée pour le moment.'
-                : "Vous n'avez pas encore réservé de place de parking."}
-          </p>
-          {!isAdmin && (
-          <button
-            onClick={() => setActiveTab('reservation')}
-            style={{
-              display: 'inline-flex', alignItems: 'center', gap: '6px',
-              padding: '10px 22px',
-              background: 'var(--color-primary)', color: '#fff',
-              border: 'none', borderRadius: '8px',
-              fontSize: '14px', fontWeight: 600, cursor: 'pointer',
-              boxShadow: 'var(--shadow-sm)',
-            }}
-          >
-            🅿️ Réserver une place
-          </button>
-          )}
+        <div className="card">
+          <div className="empty-state">
+            <div className="empty-state__icon">🅿️</div>
+            <p style={{ margin: '0 0 6px', fontWeight: 700, fontSize: 'var(--fs-md)', color: 'var(--color-text)' }}>
+              Aucune réservation
+            </p>
+            <p style={{ margin: '0 0 var(--space-6)', fontSize: 'var(--fs-base)' }}>
+              {isAdmin && bookings.length > 0
+                ? 'Aucune réservation ne correspond aux filtres.'
+                : isAdmin
+                  ? 'Aucune réservation enregistrée pour le moment.'
+                  : "Vous n'avez pas encore réservé de place de parking."}
+            </p>
+            {!isAdmin && (
+              <button className="btn btn--primary" onClick={() => setActiveTab('reservation')}>
+                🅿️ Réserver une place
+              </button>
+            )}
+          </div>
         </div>
       ) : (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-3)' }}>
           {displayed.map((b) => {
             const color = STATUS_COLORS[b.status] ?? '#6b7280';
+            void color;
             return (
-              <div
-                key={b.id}
-                style={{
-                  background: 'var(--color-surface)', border: '1px solid var(--color-border)',
-                  borderRadius: '12px', padding: '16px',
-                }}
-              >
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '12px' }}>
-                  <div>
-                    <div style={{ fontWeight: 700, fontSize: '16px' }}>
-                      Place {b.spot?.number ?? '—'}
-                      {b.spot?.type && (
-                        <span style={{ fontWeight: 400, fontSize: '13px', color: 'var(--color-text-muted)', marginLeft: '6px' }}>
-                          {b.spot.type}
-                        </span>
+              <div key={b.id} className="card">
+                <div className="card__body">
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 'var(--space-3)' }}>
+                    <div>
+                      <div style={{ fontWeight: 700, fontSize: 'var(--fs-md)' }}>
+                        Place {b.spot?.number ?? '—'}
+                        {b.spot?.type && (
+                          <span style={{ fontWeight: 400, fontSize: 'var(--fs-sm)', color: 'var(--color-text-muted)', marginLeft: 'var(--space-2)' }}>
+                            {b.spot.type}
+                          </span>
+                        )}
+                      </div>
+                      <div style={{ color: 'var(--color-text-muted)', fontSize: 'var(--fs-sm)', marginTop: '3px' }}>
+                        {formatDateFr(b.date)} · {b.startTime}–{b.endTime}
+                      </div>
+                      {isAdmin && b.user && (
+                        <div style={{ color: 'var(--color-text-muted)', fontSize: 'var(--fs-xs)', marginTop: '2px' }}>
+                          👤 {b.user.name}
+                        </div>
                       )}
                     </div>
-                    <div style={{ color: 'var(--color-text-muted)', fontSize: '13px', marginTop: '3px' }}>
-                      {formatDateFr(b.date)} · {b.startTime}–{b.endTime}
-                    </div>
-                    {isAdmin && b.user && (
-                      <div style={{ color: 'var(--color-text-muted)', fontSize: '12px', marginTop: '2px' }}>
-                        👤 {b.user.name}
+                    <span className={`badge ${STATUS_BADGE[b.status] ?? 'badge--neutral'}`} style={{ flexShrink: 0 }}>
+                      {STATUS_LABELS[b.status] ?? b.status}
+                    </span>
+                  </div>
+                  {canModify(b) && (
+                    confirmCancel === b.id ? (
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)', marginTop: 'var(--space-3)' }}>
+                        <span style={{ flex: 1, fontSize: 'var(--fs-sm)', fontWeight: 600, color: 'var(--status-occupied-fg)' }}>
+                          Annuler cette réservation ?
+                        </span>
+                        <button className="btn btn--ghost btn--sm" onClick={() => setConfirmCancel(null)}>
+                          Non
+                        </button>
+                        <button
+                          className="btn btn--danger btn--sm"
+                          onClick={() => void handleCancel(b.id)}
+                          disabled={cancelling === b.id}
+                        >
+                          {cancelling === b.id ? '…' : 'Oui, annuler'}
+                        </button>
                       </div>
-                    )}
-                  </div>
-                  <span style={{
-                    fontSize: '11px', fontWeight: 600, flexShrink: 0,
-                    padding: '3px 10px', borderRadius: 'var(--radius-full)',
-                    background: `${color}22`, color,
-                  }}>
-                    {STATUS_LABELS[b.status] ?? b.status}
-                  </span>
-                </div>
-                {canModify(b) && (
-                  confirmCancel === b.id ? (
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '12px' }}>
-                      <span style={{ flex: 1, fontSize: '13px', fontWeight: 600, color: '#dc2626' }}>
-                        Annuler cette réservation ?
-                      </span>
-                      <button
-                        onClick={() => setConfirmCancel(null)}
-                        style={{
-                          padding: '8px 14px',
-                          border: '1px solid var(--color-border)', borderRadius: '8px',
-                          background: 'var(--color-surface)', color: 'var(--color-text)',
-                          fontSize: '13px', fontWeight: 600, cursor: 'pointer',
-                        }}
-                      >
-                        Non
+                    ) : (
+                    <div style={{ display: 'flex', gap: 'var(--space-2)', marginTop: 'var(--space-3)' }}>
+                      <button className="btn btn--ghost btn--sm" onClick={() => setEditBooking(b)} style={{ flex: 1 }}>
+                        ✏️ Modifier
                       </button>
                       <button
-                        onClick={() => void handleCancel(b.id)}
+                        className="btn btn--ghost btn--sm"
+                        onClick={() => setConfirmCancel(b.id)}
                         disabled={cancelling === b.id}
-                        style={{
-                          padding: '8px 14px',
-                          border: 'none', borderRadius: '8px',
-                          background: '#dc2626', color: '#fff',
-                          fontSize: '13px', fontWeight: 600,
-                          cursor: cancelling === b.id ? 'not-allowed' : 'pointer',
-                          opacity: cancelling === b.id ? 0.6 : 1,
-                        }}
+                        style={{ flex: 1, color: 'var(--color-text-muted)' }}
                       >
-                        {cancelling === b.id ? '…' : 'Oui, annuler'}
+                        {cancelling === b.id ? '…' : '✕ Annuler'}
                       </button>
                     </div>
-                  ) : (
-                  <div style={{ display: 'flex', gap: '8px', marginTop: '12px' }}>
-                    <button
-                      onClick={() => setEditBooking(b)}
-                      style={{
-                        flex: 1, padding: '8px 14px',
-                        border: '1px solid var(--color-primary)',
-                        borderRadius: '8px',
-                        background: 'var(--color-primary-light)',
-                        color: 'var(--color-primary)',
-                        fontSize: '13px', fontWeight: 600, cursor: 'pointer',
-                      }}
-                    >
-                      ✏️ Modifier
-                    </button>
-                    <button
-                      onClick={() => setConfirmCancel(b.id)}
-                      disabled={cancelling === b.id}
-                      style={{
-                        flex: 1, padding: '8px 14px',
-                        border: '1px solid var(--color-border)', borderRadius: '8px',
-                        background: 'transparent', color: 'var(--color-text-muted)',
-                        fontSize: '13px', fontWeight: 500, cursor: cancelling === b.id ? 'not-allowed' : 'pointer',
-                        opacity: cancelling === b.id ? 0.6 : 1,
-                      }}
-                    >
-                      {cancelling === b.id ? '…' : '✕ Annuler'}
-                    </button>
-                  </div>
-                  )
-                )}
+                    )
+                  )}
+                </div>
               </div>
             );
           })}

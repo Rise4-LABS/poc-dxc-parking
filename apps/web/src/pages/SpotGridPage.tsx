@@ -61,31 +61,31 @@ export function SpotGridPage() {
   }
 
   const arrowBtn: CSSProperties = {
-    width: '32px', height: '32px',
+    width: '34px', height: '34px',
     display: 'flex', alignItems: 'center', justifyContent: 'center',
-    border: '1px solid var(--color-border)', borderRadius: '8px',
-    background: 'var(--color-surface)', color: 'var(--color-text)',
-    fontSize: '16px', cursor: 'pointer', flexShrink: 0,
+    border: '1px solid var(--color-border)', borderRadius: 'var(--radius-md)',
+    background: 'var(--color-surface)', color: 'var(--color-text-muted)',
+    fontSize: '18px', cursor: 'pointer', flexShrink: 0,
     lineHeight: 1,
   };
 
   return (
-    <div style={{ padding: '16px', maxWidth: '600px', margin: '0 auto' }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-        <h1 style={{ margin: 0, fontSize: '20px', fontWeight: 700 }}>Réservation</h1>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-          <button style={arrowBtn} onClick={() => shiftDate(-1)} title="Jour précédent">‹</button>
+    <div className="page" style={{ maxWidth: '640px' }}>
+      <div className="page__header" style={{ alignItems: 'center' }}>
+        <div>
+          <h1 className="page__title">Réservation</h1>
+          <p className="page__subtitle">Choisissez une place libre pour la date sélectionnée.</p>
+        </div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)' }}>
+          <button className="icon-btn" style={arrowBtn} onClick={() => shiftDate(-1)} title="Jour précédent">‹</button>
           <input
+            className="input"
             type="date"
             value={date}
             onChange={(e) => setDate(e.target.value)}
-            style={{
-              padding: '6px 10px', border: '1px solid var(--color-border)',
-              borderRadius: '8px', fontSize: '13px',
-              background: 'var(--color-surface)', color: 'var(--color-text)',
-            }}
+            style={{ width: 'auto', fontSize: 'var(--fs-sm)' }}
           />
-          <button style={arrowBtn} onClick={() => shiftDate(1)} title="Jour suivant">›</button>
+          <button className="icon-btn" style={arrowBtn} onClick={() => shiftDate(1)} title="Jour suivant">›</button>
         </div>
       </div>
 
@@ -94,19 +94,19 @@ export function SpotGridPage() {
         <button
           onClick={() => setActiveTab('my-bookings')}
           style={{
-            display: 'flex', alignItems: 'center', gap: '10px',
-            width: '100%', padding: '12px 14px', boxSizing: 'border-box',
-            marginBottom: '16px',
-            background: '#f0fdf4', border: '1px solid #86efac', borderRadius: '10px',
-            cursor: 'pointer', textAlign: 'left',
+            display: 'flex', alignItems: 'center', gap: 'var(--space-3)',
+            width: '100%', padding: 'var(--space-3) var(--space-4)', boxSizing: 'border-box',
+            marginBottom: 'var(--space-5)',
+            background: 'var(--status-free-bg)', border: '1px solid var(--status-free-fg)',
+            borderRadius: 'var(--radius-md)', cursor: 'pointer', textAlign: 'left',
           }}
         >
           <span style={{ fontSize: '20px' }}>✅</span>
-          <span style={{ flex: 1, fontSize: '14px', color: '#15803d' }}>
+          <span style={{ flex: 1, fontSize: 'var(--fs-base)', color: 'var(--status-free-fg)' }}>
             <strong>Place {myBookingForDate.spot?.number ?? '—'}</strong> réservée
             {date === todayIso() ? " aujourd'hui" : ' ce jour'} · {myBookingForDate.startTime}–{myBookingForDate.endTime}
           </span>
-          <span style={{ fontSize: '12px', color: '#15803d', opacity: 0.8, whiteSpace: 'nowrap' }}>Gérer ›</span>
+          <span style={{ fontSize: 'var(--fs-sm)', color: 'var(--status-free-fg)', opacity: 0.85, whiteSpace: 'nowrap', fontWeight: 600 }}>Gérer ›</span>
         </button>
       )}
 
@@ -115,36 +115,31 @@ export function SpotGridPage() {
           <Spinner size={36} />
         </div>
       ) : visibleSpots.length === 0 ? (
-        <div style={{ textAlign: 'center', padding: '60px 0', color: 'var(--color-text-muted)' }}>
-          <div style={{ fontSize: '40px', marginBottom: '12px' }}>🅿️</div>
-          <p style={{ margin: 0, fontWeight: 600 }}>Aucune place disponible</p>
-          <p style={{ margin: '8px 0 0', fontSize: '13px' }}>Toutes les places sont réservées pour cette date.</p>
+        <div className="card">
+          <div className="empty-state">
+            <div className="empty-state__icon">🅿️</div>
+            <p style={{ margin: 0, fontWeight: 700, color: 'var(--color-text)' }}>Aucune place disponible</p>
+            <p style={{ margin: '6px 0 0', fontSize: 'var(--fs-sm)' }}>Toutes les places sont réservées pour cette date.</p>
+          </div>
         </div>
       ) : (
         TYPE_ORDER.filter((t) => grouped[t]?.length).map((type) => (
-          <div key={type} style={{ marginBottom: '28px' }}>
+          <div key={type} style={{ marginBottom: 'var(--space-8)' }}>
             {/* Section header with divider */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '12px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)', marginBottom: 'var(--space-3)' }}>
               <span style={{
-                fontSize: '11px', fontWeight: 700, color: 'var(--color-text-muted)',
+                fontSize: 'var(--fs-xs)', fontWeight: 700, color: 'var(--color-text-subtle)',
                 textTransform: 'uppercase', letterSpacing: '0.08em',
                 whiteSpace: 'nowrap',
               }}>
                 {TYPE_LABELS[type]}
               </span>
               <div style={{ flex: 1, height: '1px', background: 'var(--color-border)' }} />
-              <span style={{
-                fontSize: '11px', color: 'var(--color-text-muted)',
-                background: 'var(--color-surface-2)',
-                border: '1px solid var(--color-border)',
-                borderRadius: 'var(--radius-full)',
-                padding: '1px 8px',
-                whiteSpace: 'nowrap',
-              }}>
+              <span className="badge badge--success badge--none" style={{ whiteSpace: 'nowrap' }}>
                 {grouped[type].filter(s => s.status === 'FREE').length} libre{grouped[type].filter(s => s.status === 'FREE').length !== 1 ? 's' : ''}
               </span>
             </div>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))', gap: '8px' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))', gap: 'var(--space-3)' }}>
               {grouped[type].map((spot) => (
                 <SpotCard
                   key={spot.id}

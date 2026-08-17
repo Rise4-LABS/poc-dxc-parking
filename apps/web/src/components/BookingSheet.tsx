@@ -82,57 +82,38 @@ export function BookingSheet({ spot, date: gridDate, onClose, onBooked }: Props)
     }
   }
 
-  /* ── styles ── */
-  const labelStyle: React.CSSProperties = {
-    display: 'block', fontSize: '11px', fontWeight: 700,
-    color: 'var(--color-text-muted)', textTransform: 'uppercase',
-    letterSpacing: '0.06em', marginBottom: '8px',
-  };
-  const timeInput: React.CSSProperties = {
-    width: '100%', padding: '11px 12px',
-    border: '1px solid var(--color-border)', borderRadius: '8px',
-    fontSize: '16px', background: 'var(--color-surface)',
-    color: 'var(--color-text)', boxSizing: 'border-box',
-    textAlign: 'center',
-  };
-
   return (
     <Modal open={!!spot} onClose={onClose} title={`Réserver la place ${spot?.number ?? ''}`}>
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-5)' }}>
 
         {/* Erreur */}
         {error && (
           <div style={{
-            padding: '10px 14px', background: '#fef2f2',
-            border: '1px solid #fca5a5', borderRadius: '8px',
-            color: '#dc2626', fontSize: '13px',
+            padding: 'var(--space-3) var(--space-4)', background: 'var(--status-occupied-bg)',
+            border: '1px solid var(--status-occupied-fg)', borderRadius: 'var(--radius-md)',
+            color: 'var(--status-occupied-fg)', fontSize: 'var(--fs-sm)',
           }}>
             ⚠️ {error}
           </div>
         )}
 
         {/* Date */}
-        <div>
-          <label style={labelStyle}>Date</label>
+        <div className="field">
+          <label className="label">Date</label>
           <input
+            className="input"
             type="date"
             value={date}
             min={todayIso()}
             onChange={e => setDate(e.target.value)}
             onClick={e => (e.currentTarget as HTMLInputElement).showPicker?.()}
-            style={{
-              width: '100%', padding: '11px 14px',
-              border: '1px solid var(--color-border)', borderRadius: '8px',
-              fontSize: '15px', background: 'var(--color-surface)',
-              color: 'var(--color-text)', boxSizing: 'border-box',
-            }}
           />
         </div>
 
         {/* Créneaux */}
-        <div>
-          <label style={labelStyle}>Créneau</label>
-          <div style={{ display: 'flex', gap: '8px' }}>
+        <div className="field">
+          <label className="label">Créneau</label>
+          <div style={{ display: 'flex', gap: 'var(--space-2)' }}>
             {TIME_SLOTS.map((slot, i) => (
               <button
                 key={i}
@@ -141,42 +122,45 @@ export function BookingSheet({ spot, date: gridDate, onClose, onBooked }: Props)
                 style={{
                   flex: 1,
                   display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '2px',
-                  padding: '10px 8px', borderRadius: '8px',
-                  border: `2px solid ${slotIdx === i ? 'var(--color-primary)' : 'var(--color-border)'}`,
-                  background: slotIdx === i ? 'var(--color-primary-light)' : 'var(--color-surface)',
-                  color: slotIdx === i ? 'var(--color-primary)' : 'var(--color-text)',
+                  padding: 'var(--space-3) var(--space-2)', borderRadius: 'var(--radius-md)',
+                  border: `1px solid ${slotIdx === i ? 'var(--brand)' : 'var(--color-border-strong)'}`,
+                  background: slotIdx === i ? 'var(--brand-050)' : 'var(--color-surface)',
+                  color: slotIdx === i ? 'var(--brand)' : 'var(--color-text)',
+                  boxShadow: slotIdx === i ? 'inset 0 0 0 1px var(--brand)' : 'none',
                   cursor: 'pointer', transition: 'all 0.15s',
                 }}
               >
-                <span style={{ fontSize: '13px', fontWeight: slotIdx === i ? 700 : 500 }}>
+                <span style={{ fontSize: 'var(--fs-sm)', fontWeight: slotIdx === i ? 700 : 500 }}>
                   {slot.label}
                 </span>
-                <span style={{ fontSize: '11px', opacity: 0.7 }}>{slot.sublabel}</span>
+                <span style={{ fontSize: 'var(--fs-xs)', opacity: 0.7 }}>{slot.sublabel}</span>
               </button>
             ))}
           </div>
         </div>
 
         {/* Heures début / fin */}
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
-          <div>
-            <label style={labelStyle}>Heure de début</label>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 'var(--space-3)' }}>
+          <div className="field">
+            <label className="label">Heure de début</label>
             <input
+              className="input"
               type="time"
               value={startTime}
               onChange={e => setStartTime(e.target.value)}
               onClick={e => (e.currentTarget as HTMLInputElement).showPicker?.()}
-              style={timeInput}
+              style={{ textAlign: 'center' }}
             />
           </div>
-          <div>
-            <label style={labelStyle}>Heure de fin</label>
+          <div className="field">
+            <label className="label">Heure de fin</label>
             <input
+              className="input"
               type="time"
               value={endTime}
               onChange={e => setEndTime(e.target.value)}
               onClick={e => (e.currentTarget as HTMLInputElement).showPicker?.()}
-              style={timeInput}
+              style={{ textAlign: 'center' }}
             />
           </div>
         </div>
@@ -187,36 +171,32 @@ export function BookingSheet({ spot, date: gridDate, onClose, onBooked }: Props)
             type="button"
             onClick={() => setRepeat(v => !v)}
             style={{
-              display: 'flex', alignItems: 'center', gap: '10px',
-              width: '100%', padding: '11px 14px', boxSizing: 'border-box',
-              borderRadius: '8px',
-              border: `2px solid ${repeat ? 'var(--color-primary)' : 'var(--color-border)'}`,
-              background: repeat ? 'var(--color-primary-light)' : 'var(--color-surface)',
-              color: repeat ? 'var(--color-primary)' : 'var(--color-text)',
-              fontSize: '14px', fontWeight: 600, cursor: 'pointer', transition: 'all 0.15s',
+              display: 'flex', alignItems: 'center', gap: 'var(--space-3)',
+              width: '100%', padding: 'var(--space-3) var(--space-4)', boxSizing: 'border-box',
+              borderRadius: 'var(--radius-md)',
+              border: `1px solid ${repeat ? 'var(--brand)' : 'var(--color-border-strong)'}`,
+              background: repeat ? 'var(--brand-050)' : 'var(--color-surface)',
+              color: repeat ? 'var(--brand)' : 'var(--color-text)',
+              boxShadow: repeat ? 'inset 0 0 0 1px var(--brand)' : 'none',
+              fontSize: 'var(--fs-base)', fontWeight: 600, cursor: 'pointer', transition: 'all 0.15s',
             }}
           >
             <span style={{ fontSize: '16px' }}>🔁</span>
             Répéter chaque semaine
-            <span style={{ marginLeft: 'auto', fontSize: '13px', opacity: 0.7 }}>{repeat ? 'Oui' : 'Non'}</span>
+            <span style={{ marginLeft: 'auto', fontSize: 'var(--fs-sm)', opacity: 0.7 }}>{repeat ? 'Oui' : 'Non'}</span>
           </button>
           {repeat && (
-            <div style={{ marginTop: '10px' }}>
-              <label style={labelStyle}>Jusqu'au (12 semaines max)</label>
+            <div className="field" style={{ marginTop: 'var(--space-3)' }}>
+              <label className="label">Jusqu'au (12 semaines max)</label>
               <input
+                className="input"
                 type="date"
                 value={repeatUntil}
                 min={date}
                 onChange={e => setRepeatUntil(e.target.value)}
                 onClick={e => (e.currentTarget as HTMLInputElement).showPicker?.()}
-                style={{
-                  width: '100%', padding: '11px 14px',
-                  border: '1px solid var(--color-border)', borderRadius: '8px',
-                  fontSize: '15px', background: 'var(--color-surface)',
-                  color: 'var(--color-text)', boxSizing: 'border-box',
-                }}
               />
-              <div style={{ fontSize: '11px', color: 'var(--color-text-muted)', marginTop: '4px' }}>
+              <div style={{ fontSize: 'var(--fs-xs)', color: 'var(--color-text-muted)', marginTop: '4px' }}>
                 Même jour de la semaine, même créneau. Les dates déjà prises seront ignorées.
               </div>
             </div>
@@ -225,14 +205,10 @@ export function BookingSheet({ spot, date: gridDate, onClose, onBooked }: Props)
 
         {/* Bouton */}
         <button
+          className="btn btn--primary btn--block"
           onClick={() => void handleBook()}
           disabled={loading}
-          style={{
-            padding: '14px', background: 'var(--color-primary)', color: '#fff',
-            border: 'none', borderRadius: '10px', fontSize: '16px', fontWeight: 600,
-            cursor: loading ? 'not-allowed' : 'pointer', opacity: loading ? 0.7 : 1,
-            display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
-          }}
+          style={{ padding: 'var(--space-4)', fontSize: 'var(--fs-md)' }}
         >
           {loading ? <><Spinner size={18} /> Réservation…</> : 'Confirmer la réservation'}
         </button>

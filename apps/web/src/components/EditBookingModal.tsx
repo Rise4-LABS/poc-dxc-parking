@@ -73,72 +73,55 @@ export function EditBookingModal({ booking, onClose, onSaved }: Props) {
     }
   }
 
-  /* ── styles ── */
-  const label: React.CSSProperties = {
-    display: 'block', fontSize: '11px', fontWeight: 700,
-    color: 'var(--color-text-muted)', textTransform: 'uppercase',
-    letterSpacing: '0.06em', marginBottom: '8px',
-  };
-  const inputStyle: React.CSSProperties = {
-    width: '100%', padding: '10px 12px',
-    border: '1px solid var(--color-border)', borderRadius: '8px',
-    fontSize: '14px', background: 'var(--color-surface)',
-    color: 'var(--color-text)', boxSizing: 'border-box',
-  };
-
   return (
     <Modal
       open={!!booking}
       onClose={onClose}
       title={`Modifier — Place ${booking?.spot?.number ?? ''}`}
     >
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-5)' }}>
 
         {/* Erreur */}
         {error && (
           <div style={{
-            padding: '10px 14px', background: '#fef2f2',
-            border: '1px solid #fca5a5', borderRadius: '8px',
-            color: '#dc2626', fontSize: '13px',
+            padding: '10px 14px', background: 'var(--status-occupied-bg)',
+            border: '1px solid var(--status-occupied-fg)', borderRadius: 'var(--radius-md)',
+            color: 'var(--status-occupied-fg)', fontSize: 'var(--fs-sm)',
           }}>
             ⚠️ {error}
           </div>
         )}
 
         {/* Date */}
-        <div>
-          <label style={label}>Date</label>
+        <div className="field">
+          <label className="label">Date</label>
           <input
+            className="input"
             type="date"
             value={date}
             min={todayIso()}
             onChange={e => setDate(e.target.value)}
             onClick={e => (e.currentTarget as HTMLInputElement).showPicker?.()}
-            style={inputStyle}
           />
         </div>
 
         {/* Créneau */}
-        <div>
-          <label style={label}>Créneau horaire</label>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '7px' }}>
+        <div className="field">
+          <label className="label">Créneau horaire</label>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-2)' }}>
             {TIME_SLOTS.map((slot, i) => (
               <button
                 key={i}
                 type="button"
                 onClick={() => setSlotIdx(i)}
+                className={`chip${slotIdx === i ? ' is-active' : ''}`}
                 style={{
                   display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-                  padding: '11px 14px', borderRadius: '8px', textAlign: 'left',
-                  border: `2px solid ${slotIdx === i ? 'var(--color-primary)' : 'var(--color-border)'}`,
-                  background: slotIdx === i ? 'var(--color-primary-light)' : 'var(--color-surface)',
-                  color: slotIdx === i ? 'var(--color-primary)' : 'var(--color-text)',
-                  fontSize: '14px', cursor: 'pointer',
-                  fontWeight: slotIdx === i ? 600 : 400,
+                  textAlign: 'left', padding: '11px 14px',
                 }}
               >
                 <span>{slot.label}</span>
-                <span style={{ fontSize: '12px', opacity: 0.7 }}>{slot.sublabel}</span>
+                <span style={{ fontSize: 'var(--fs-xs)', opacity: 0.75 }}>{slot.sublabel}</span>
               </button>
             ))}
           </div>
@@ -146,25 +129,25 @@ export function EditBookingModal({ booking, onClose, onSaved }: Props) {
 
         {/* Heures personnalisées */}
         {isCustom && (
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
-            <div>
-              <label style={label}>Heure début</label>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 'var(--space-3)' }}>
+            <div className="field">
+              <label className="label">Heure début</label>
               <input
+                className="input"
                 type="time"
                 value={custStart}
                 onChange={e => setCustStart(e.target.value)}
                 onClick={e => (e.currentTarget as HTMLInputElement).showPicker?.()}
-                style={inputStyle}
               />
             </div>
-            <div>
-              <label style={label}>Heure fin</label>
+            <div className="field">
+              <label className="label">Heure fin</label>
               <input
+                className="input"
                 type="time"
                 value={custEnd}
                 onChange={e => setCustEnd(e.target.value)}
                 onClick={e => (e.currentTarget as HTMLInputElement).showPicker?.()}
-                style={inputStyle}
               />
             </div>
           </div>
@@ -174,8 +157,8 @@ export function EditBookingModal({ booking, onClose, onSaved }: Props) {
         {date && startTime && endTime && (
           <div style={{
             padding: '10px 14px', background: 'var(--color-surface-2)',
-            border: '1px solid var(--color-border)', borderRadius: '8px',
-            fontSize: '13px', color: 'var(--color-text-muted)',
+            border: '1px solid var(--color-border)', borderRadius: 'var(--radius-md)',
+            fontSize: 'var(--fs-sm)', color: 'var(--color-text-muted)',
           }}>
             📅 <strong style={{ color: 'var(--color-text)' }}>
               {new Date(date + 'T12:00:00').toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' })}
@@ -187,17 +170,10 @@ export function EditBookingModal({ booking, onClose, onSaved }: Props) {
         {/* Bouton */}
         <button
           type="button"
+          className="btn btn--primary btn--block"
           onClick={() => void handleSave()}
           disabled={loading}
-          style={{
-            padding: '14px',
-            background: 'var(--color-primary)', color: '#fff',
-            border: 'none', borderRadius: '10px',
-            fontSize: '15px', fontWeight: 700,
-            cursor: loading ? 'not-allowed' : 'pointer',
-            opacity: loading ? 0.7 : 1,
-            display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
-          }}
+          style={{ padding: '13px' }}
         >
           {loading ? <><Spinner size={18} /> Enregistrement…</> : '✏️ Enregistrer les modifications'}
         </button>

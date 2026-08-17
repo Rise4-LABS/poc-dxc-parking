@@ -9,11 +9,12 @@ import { AdminPage } from './pages/AdminPage';
 import { UsersPage } from './pages/UsersPage';
 import { LogsPage } from './pages/LogsPage';
 import { BottomNav } from './components/BottomNav';
+import { Sidebar } from './components/Sidebar';
 import { TopBar } from './components/TopBar';
 import { Toast } from './components/Toast';
 
 export function App() {
-  const { user, accessToken } = useAuthStore();
+  const { user } = useAuthStore();
   const { activeTab } = useUiStore();
 
   // Lien d'activation dans l'URL (?activate=TOKEN)
@@ -27,17 +28,20 @@ export function App() {
   const isAdmin = user.role !== 'USER';
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100dvh' }}>
-      <TopBar />
-      <main style={{ flex: 1, overflowY: 'auto', paddingBottom: '80px' }}>
-        {activeTab === 'reservation'  && <SpotGridPage />}
-        {activeTab === 'my-bookings' && <HistoryPage />}
-        {activeTab === 'planning'    && isAdmin && <PlanningPage />}
-        {activeTab === 'stats'       && isAdmin && <AdminPage />}
-        {activeTab === 'users'       && isAdmin && <UsersPage />}
-        {activeTab === 'logs'        && isAdmin && <LogsPage />}
-      </main>
-      <BottomNav />
+    <div className="app-shell">
+      <Sidebar />
+      <div className="app-body">
+        <TopBar />
+        <main className="app-content">
+          {activeTab === 'reservation' && <SpotGridPage />}
+          {activeTab === 'my-bookings' && <HistoryPage />}
+          {activeTab === 'planning' && isAdmin && <PlanningPage />}
+          {activeTab === 'stats' && isAdmin && <AdminPage />}
+          {activeTab === 'users' && isAdmin && <UsersPage />}
+          {activeTab === 'logs' && isAdmin && <LogsPage />}
+        </main>
+        <BottomNav />
+      </div>
       <Toast />
     </div>
   );

@@ -2,112 +2,49 @@ import { useAuthStore } from '../store/authStore';
 import { useUiStore } from '../store/uiStore';
 
 const ROLE_LABELS: Record<string, string> = {
-  USER:        'Utilisateur',
-  ADMIN:       'Administrateur',
+  USER: 'Utilisateur',
+  ADMIN: 'Administrateur',
   SUPER_ADMIN: 'Super admin',
 };
 
 export function TopBar() {
   const { user, logout } = useAuthStore();
   const { addToast } = useUiStore();
-
-  function handleLogout() {
-    logout();
-    addToast('Déconnexion réussie', 'success');
-  }
-
   if (!user) return null;
 
-  const initials = user.name
-    .split(' ')
-    .map((w) => w[0])
-    .join('')
-    .toUpperCase()
-    .slice(0, 2);
-
+  const initials = user.name.split(' ').map((w) => w[0]).join('').toUpperCase().slice(0, 2);
   const isAdmin = user.role !== 'USER';
 
   return (
-    <header style={{
-      position: 'sticky',
-      top: 0,
-      zIndex: 200,
-      background: 'var(--color-primary)',
-      boxShadow: '0 2px 8px rgba(0,0,0,0.18)',
-    }}>
-      {/* Spacer qui repousse le contenu sous la barre d'état iOS (safe area) */}
-      <div aria-hidden="true" style={{ height: 'env(safe-area-inset-top, 0px)' }} />
+    <header className="topbar topbar--mobile">
+      {/* Spacer safe-area iOS */}
+      <div aria-hidden="true" style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 'env(safe-area-inset-top, 0px)', background: 'var(--color-surface)' }} />
 
-      {/* Contenu du header */}
-      <div style={{
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        padding: '8px 16px 10px',
-        minHeight: '54px',
-      }}>
-
-      {/* Logo */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+      <div className="topbar__mobile-brand">
         <span style={{ fontSize: '20px', lineHeight: 1 }}>🅿️</span>
-        <span style={{ fontSize: '15px', fontWeight: 700, color: '#fff', letterSpacing: '0.01em' }}>
-          BoxBox
-        </span>
+        BoxBox
       </div>
 
-      {/* User + logout */}
+      <div className="topbar__spacer" />
+
       <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-        {/* Avatar + name */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <div style={{
-            width: '30px', height: '30px', borderRadius: '50%',
-            background: isAdmin ? '#f59e0b' : 'rgba(255,255,255,0.2)',
-            color: '#fff',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            fontSize: '11px', fontWeight: 700, flexShrink: 0,
-            border: '1px solid rgba(255,255,255,0.25)',
-          }}>
-            {initials}
-          </div>
+          <span className={`avatar avatar--sm${isAdmin ? ' avatar--admin' : ''}`}>{initials}</span>
           <div style={{ display: 'flex', flexDirection: 'column', lineHeight: 1.2 }}>
-            <span style={{ fontSize: '13px', fontWeight: 600, color: '#fff' }}>
-              {user.name.split(' ')[0]}
-            </span>
-            <span style={{ fontSize: '10px', color: 'rgba(255,255,255,0.65)' }}>
-              {ROLE_LABELS[user.role] ?? user.role}
-            </span>
+            <span style={{ fontSize: 'var(--fs-sm)', fontWeight: 600 }}>{user.name.split(' ')[0]}</span>
+            <span style={{ fontSize: 'var(--fs-xs)', color: 'var(--color-text-muted)' }}>{ROLE_LABELS[user.role] ?? user.role}</span>
           </div>
         </div>
-
-        {/* Logout button */}
         <button
-          onClick={handleLogout}
+          className="icon-btn"
           title="Se déconnecter"
-          style={{
-            display: 'flex', alignItems: 'center', gap: '5px',
-            padding: '6px 10px',
-            border: '1px solid rgba(255,255,255,0.25)',
-            borderRadius: '8px',
-            background: 'rgba(255,255,255,0.1)',
-            color: 'rgba(255,255,255,0.85)',
-            fontSize: '12px', fontWeight: 500,
-            cursor: 'pointer',
-            transition: 'background 0.15s, border-color 0.15s',
-          }}
-          onMouseEnter={(e) => {
-            (e.currentTarget as HTMLButtonElement).style.background = 'rgba(255,255,255,0.2)';
-            (e.currentTarget as HTMLButtonElement).style.borderColor = 'rgba(255,255,255,0.45)';
-          }}
-          onMouseLeave={(e) => {
-            (e.currentTarget as HTMLButtonElement).style.background = 'rgba(255,255,255,0.1)';
-            (e.currentTarget as HTMLButtonElement).style.borderColor = 'rgba(255,255,255,0.25)';
-          }}
+          onClick={() => { logout(); addToast('Déconnexion réussie', 'success'); }}
         >
-          <span style={{ fontSize: '14px' }}>⎋</span>
-          Déconnexion
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" /><polyline points="16 17 21 12 16 7" /><line x1="21" y1="12" x2="9" y2="12" />
+          </svg>
         </button>
       </div>
-      </div>{/* fin contenu header */}
     </header>
   );
 }

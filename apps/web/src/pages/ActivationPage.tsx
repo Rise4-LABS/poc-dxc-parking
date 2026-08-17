@@ -20,13 +20,20 @@ function passwordStrength(pwd: string): { label: string; color: string; pct: num
 const S = {
   page: {
     minHeight: '100dvh', display: 'flex', alignItems: 'center',
-    justifyContent: 'center', background: 'var(--color-surface-2)', padding: '24px',
+    justifyContent: 'center', background: 'var(--color-surface-2)', padding: 'var(--space-6)',
   } as const,
-  card: {
-    background: 'var(--color-surface)', border: '1px solid var(--color-border)',
-    borderRadius: '16px', padding: '40px 32px',
-    width: '100%', maxWidth: '380px', boxShadow: '0 4px 16px rgba(0,0,0,.10)',
+  card: { width: '100%', maxWidth: '420px', boxShadow: 'var(--shadow-lg)' } as const,
+  badge: {
+    width: '56px', height: '56px', borderRadius: 'var(--radius-lg)',
+    display: 'grid', placeItems: 'center', margin: '0 auto var(--space-4)',
+    background: 'linear-gradient(135deg, var(--accent), var(--brand-600))',
+    fontSize: '28px', boxShadow: 'var(--shadow-md)',
   } as const,
+  eye: {
+    position: 'absolute' as const, right: '10px', top: '50%', transform: 'translateY(-50%)',
+    border: 'none', background: 'transparent', cursor: 'pointer',
+    color: 'var(--color-text-muted)', fontSize: '18px', padding: '4px', lineHeight: 1,
+  },
 };
 
 export function ActivationPage({ token }: Props) {
@@ -57,130 +64,109 @@ export function ActivationPage({ token }: Props) {
     }
   }
 
-  const inputStyle: React.CSSProperties = {
-    width: '100%', padding: '12px 16px',
-    border: '1px solid var(--color-border)', borderRadius: '10px',
-    fontSize: '15px', background: 'var(--color-surface)', color: 'var(--color-text)',
-    boxSizing: 'border-box',
-  };
-
   if (success) return (
     <div style={S.page}>
-      <div style={{ ...S.card, textAlign: 'center' }}>
-        <div style={{ fontSize: '52px', marginBottom: '16px' }}>✅</div>
-        <h2 style={{ margin: '0 0 8px', fontSize: '20px', fontWeight: 700 }}>Mot de passe créé !</h2>
-        <p style={{ margin: '0 0 24px', color: 'var(--color-text-muted)', fontSize: '14px' }}>
-          Votre compte est maintenant actif. Vous pouvez vous connecter.
-        </p>
-        <a
-          href="/"
-          style={{
-            display: 'inline-block', padding: '12px 28px',
-            background: 'var(--color-primary)', color: '#fff',
-            borderRadius: '10px', fontWeight: 600, fontSize: '15px',
-            textDecoration: 'none',
-          }}
-        >
-          Se connecter →
-        </a>
+      <div className="card" style={S.card}>
+        <div className="card__body" style={{ textAlign: 'center' }}>
+          <div style={{ fontSize: '52px', marginBottom: 'var(--space-4)' }}>✅</div>
+          <h2 style={{ margin: '0 0 8px', fontSize: 'var(--fs-xl)', fontWeight: 800, letterSpacing: '-.02em' }}>Mot de passe créé !</h2>
+          <p style={{ margin: '0 0 var(--space-6)', color: 'var(--color-text-muted)', fontSize: 'var(--fs-base)' }}>
+            Votre compte est maintenant actif. Vous pouvez vous connecter.
+          </p>
+          <a href="/" className="btn btn--primary" style={{ padding: '12px 28px' }}>
+            Se connecter →
+          </a>
+        </div>
       </div>
     </div>
   );
 
   return (
     <div style={S.page}>
-      <div style={S.card}>
-        <div style={{ textAlign: 'center', marginBottom: '28px' }}>
-          <span style={{ fontSize: '48px', display: 'block', marginBottom: '12px' }}>🔐</span>
-          <h1 style={{ margin: '0 0 6px', fontSize: '22px', fontWeight: 800 }}>Créer votre mot de passe</h1>
-          <p style={{ margin: 0, color: 'var(--color-text-muted)', fontSize: '14px' }}>
-            Choisissez un mot de passe sécurisé pour accéder à l'application.
-          </p>
-        </div>
-
-        {error && (
-          <div style={{
-            padding: '10px 14px', background: '#fef2f2', border: '1px solid #fca5a5',
-            borderRadius: '8px', color: '#dc2626', fontSize: '13px', marginBottom: '16px',
-          }}>
-            ⚠️ {error}
+      <div className="card" style={S.card}>
+        <div className="card__body">
+          <div style={{ textAlign: 'center', marginBottom: 'var(--space-6)' }}>
+            <div style={S.badge}>🔐</div>
+            <h1 style={{ margin: '0 0 6px', fontSize: 'var(--fs-xl)', fontWeight: 800, letterSpacing: '-.02em' }}>Créer votre mot de passe</h1>
+            <p style={{ margin: 0, color: 'var(--color-text-muted)', fontSize: 'var(--fs-base)' }}>
+              Choisissez un mot de passe sécurisé pour accéder à l'application.
+            </p>
           </div>
-        )}
 
-        <form onSubmit={(e) => void handleSubmit(e)}>
-          <div style={{ marginBottom: '16px' }}>
-            <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, marginBottom: '6px', color: 'var(--color-text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-              Nouveau mot de passe
-            </label>
-            <div style={{ position: 'relative' }}>
+          {error && (
+            <div style={{
+              display: 'flex', alignItems: 'flex-start', gap: '8px',
+              padding: '10px 14px', background: 'var(--status-occupied-bg)',
+              border: '1px solid var(--status-occupied-fg)',
+              borderRadius: 'var(--radius-md)', color: 'var(--status-occupied-fg)',
+              fontSize: 'var(--fs-sm)', fontWeight: 500, marginBottom: 'var(--space-4)',
+            }}>
+              <span>⚠️</span><span>{error}</span>
+            </div>
+          )}
+
+          <form onSubmit={(e) => void handleSubmit(e)} style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-4)' }}>
+            <div className="field">
+              <label className="label">Nouveau mot de passe</label>
+              <div style={{ position: 'relative' }}>
+                <input
+                  className="input"
+                  style={{ paddingRight: '44px' }}
+                  type={showPwd ? 'text' : 'password'}
+                  value={password}
+                  onChange={e => setPassword(e.target.value)}
+                  placeholder="Au moins 6 caractères"
+                  autoComplete="new-password"
+                  required
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPwd(v => !v)}
+                  style={S.eye}
+                  aria-label={showPwd ? 'Masquer le mot de passe' : 'Afficher le mot de passe'}
+                >
+                  {showPwd ? '🙈' : '👁'}
+                </button>
+              </div>
+              {password && (
+                <div style={{ marginTop: '4px' }}>
+                  <div style={{ height: '4px', background: 'var(--color-surface-3)', borderRadius: 'var(--radius-full)', overflow: 'hidden', marginBottom: '4px' }}>
+                    <div style={{ height: '100%', width: `${strength.pct}%`, background: strength.color, borderRadius: 'var(--radius-full)', transition: 'all 0.3s' }} />
+                  </div>
+                  <span style={{ fontSize: 'var(--fs-xs)', color: strength.color, fontWeight: 700 }}>{strength.label}</span>
+                </div>
+              )}
+            </div>
+
+            <div className="field">
+              <label className="label">Confirmer le mot de passe</label>
               <input
-                type={showPwd ? 'text' : 'password'}
-                value={password}
-                onChange={e => setPassword(e.target.value)}
-                placeholder="Au moins 6 caractères"
+                className="input"
+                type="password"
+                value={confirm}
+                onChange={e => setConfirm(e.target.value)}
+                placeholder="Répétez le mot de passe"
                 autoComplete="new-password"
-                style={{ ...inputStyle, paddingRight: '48px' }}
+                style={confirm && confirm !== password ? { borderColor: 'var(--status-occupied-fg)' } : undefined}
                 required
               />
-              <button
-                type="button"
-                onClick={() => setShowPwd(v => !v)}
-                style={{
-                  position: 'absolute', right: '12px', top: '50%', transform: 'translateY(-50%)',
-                  border: 'none', background: 'transparent', cursor: 'pointer',
-                  color: 'var(--color-text-muted)', fontSize: '18px', padding: '4px',
-                }}
-              >
-                {showPwd ? '🙈' : '👁'}
-              </button>
-            </div>
-            {password && (
-              <div style={{ marginTop: '6px' }}>
-                <div style={{ height: '4px', background: '#e5e7eb', borderRadius: '2px', overflow: 'hidden', marginBottom: '4px' }}>
-                  <div style={{ height: '100%', width: `${strength.pct}%`, background: strength.color, borderRadius: '2px', transition: 'all 0.3s' }} />
+              {confirm && confirm !== password && (
+                <div style={{ fontSize: 'var(--fs-xs)', color: 'var(--status-occupied-fg)', marginTop: '2px' }}>
+                  Les mots de passe ne correspondent pas
                 </div>
-                <span style={{ fontSize: '11px', color: strength.color, fontWeight: 600 }}>{strength.label}</span>
-              </div>
-            )}
-          </div>
+              )}
+            </div>
 
-          <div style={{ marginBottom: '24px' }}>
-            <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, marginBottom: '6px', color: 'var(--color-text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-              Confirmer le mot de passe
-            </label>
-            <input
-              type="password"
-              value={confirm}
-              onChange={e => setConfirm(e.target.value)}
-              placeholder="Répétez le mot de passe"
-              autoComplete="new-password"
-              style={{
-                ...inputStyle,
-                borderColor: confirm && confirm !== password ? '#fca5a5' : 'var(--color-border)',
-              }}
-              required
-            />
-            {confirm && confirm !== password && (
-              <div style={{ fontSize: '12px', color: '#dc2626', marginTop: '4px' }}>
-                Les mots de passe ne correspondent pas
-              </div>
-            )}
-          </div>
-
-          <button
-            type="submit"
-            disabled={loading}
-            style={{
-              width: '100%', padding: '14px',
-              background: 'var(--color-primary)', color: '#fff',
-              border: 'none', borderRadius: '10px',
-              fontSize: '16px', fontWeight: 600, cursor: loading ? 'not-allowed' : 'pointer',
-              opacity: loading ? 0.7 : 1,
-            }}
-          >
-            {loading ? 'Activation…' : 'Activer mon compte'}
-          </button>
-        </form>
+            <button
+              type="submit"
+              className="btn btn--primary btn--block"
+              disabled={loading}
+              style={{ marginTop: 'var(--space-2)', padding: '12px' }}
+            >
+              {loading ? 'Activation…' : 'Activer mon compte'}
+            </button>
+          </form>
+        </div>
       </div>
     </div>
   );

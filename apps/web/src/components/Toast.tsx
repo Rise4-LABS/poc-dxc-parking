@@ -6,10 +6,10 @@ const TYPE_ICON: Record<string, string> = {
   info:    'ℹ️',
 };
 
-const TYPE_STYLE: Record<string, { bg: string; border: string; color: string }> = {
-  success: { bg: '#f0fdf4', border: '#86efac', color: '#166534' },
-  error:   { bg: '#fef2f2', border: '#fca5a5', color: '#991b1b' },
-  info:    { bg: '#f0f9ff', border: '#7dd3fc', color: '#0c4a6e' },
+const TYPE_STYLE: Record<string, { bg: string; accent: string; color: string }> = {
+  success: { bg: 'var(--status-free-bg)',     accent: 'var(--status-free-fg)',     color: 'var(--status-free-fg)' },
+  error:   { bg: 'var(--status-occupied-bg)', accent: 'var(--status-occupied-fg)', color: 'var(--status-occupied-fg)' },
+  info:    { bg: 'var(--status-offslot-bg)',  accent: 'var(--status-offslot-fg)',  color: 'var(--status-offslot-fg)' },
 };
 
 export function Toast() {
@@ -23,7 +23,7 @@ export function Toast() {
       zIndex: 9999,
       display: 'flex',
       flexDirection: 'column',
-      gap: '8px',
+      gap: '10px',
       width: 'min(calc(100vw - 40px), 360px)',
       pointerEvents: 'none',
     }}>
@@ -35,23 +35,31 @@ export function Toast() {
             style={{
               display: 'flex',
               alignItems: 'flex-start',
-              gap: '10px',
-              padding: '12px 14px',
-              borderRadius: '10px',
-              fontSize: '13px',
+              gap: '12px',
+              padding: '13px 14px',
+              borderRadius: 'var(--radius-md)',
+              fontSize: 'var(--fs-sm)',
               fontWeight: 500,
-              background: s.bg,
-              color: s.color,
-              border: `1px solid ${s.border}`,
-              boxShadow: 'var(--shadow-md)',
+              background: 'var(--color-surface)',
+              color: 'var(--color-text)',
+              border: '1px solid var(--color-border)',
+              borderLeft: `4px solid ${s.accent}`,
+              boxShadow: 'var(--shadow-lg)',
               pointerEvents: 'auto',
               animation: 'toastIn 0.22s cubic-bezier(.16,1,.3,1)',
             }}
           >
-            <span style={{ fontSize: '16px', lineHeight: 1.3, flexShrink: 0 }}>
+            <span style={{
+              flexShrink: 0,
+              width: '26px', height: '26px',
+              display: 'grid', placeItems: 'center',
+              borderRadius: 'var(--radius-full)',
+              background: s.bg,
+              fontSize: '14px', lineHeight: 1,
+            }}>
               {TYPE_ICON[toast.type]}
             </span>
-            <span style={{ flex: 1, lineHeight: 1.4 }}>{toast.message}</span>
+            <span style={{ flex: 1, lineHeight: 1.4, paddingTop: '4px' }}>{toast.message}</span>
             <button
               onClick={() => removeToast(toast.id)}
               style={{
@@ -59,11 +67,11 @@ export function Toast() {
                 background: 'transparent',
                 border: 'none',
                 cursor: 'pointer',
-                color: s.color,
-                opacity: 0.6,
-                fontSize: '16px',
+                color: 'var(--color-text-muted)',
+                opacity: 0.7,
+                fontSize: '18px',
                 lineHeight: 1,
-                padding: '0 2px',
+                padding: '2px 2px',
               }}
               aria-label="Fermer"
             >

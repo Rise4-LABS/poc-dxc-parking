@@ -58,12 +58,12 @@ const TYPE_LABELS: Record<string, string> = {
 type CellStatus = 'free' | 'reserved' | 'occupied' | 'released' | 'blocked' | 'indefinite';
 
 const CELL: Record<CellStatus, { bg: string; text: string; label: string }> = {
-  free:       { bg: '#16a34a', text: '#fff',    label: 'Libre'                 },
-  reserved:   { bg: '#f59e0b', text: '#fff',    label: 'Réservé'               },
-  occupied:   { bg: '#dc2626', text: '#fff',    label: 'Occupé'                },
-  released:   { bg: '#9ca3af', text: '#fff',    label: 'Libéré'                },
-  blocked:    { bg: '#374151', text: '#d1d5db', label: 'Bloqué'                },
-  indefinite: { bg: '#1e293b', text: '#94a3b8', label: "Jusqu'à nouvel ordre"  },
+  free:       { bg: 'var(--status-free-bg)',     text: 'var(--status-free-fg)',     label: 'Libre'                 },
+  reserved:   { bg: 'var(--status-reserved-bg)', text: 'var(--status-reserved-fg)', label: 'Réservé'               },
+  occupied:   { bg: 'var(--status-occupied-bg)', text: 'var(--status-occupied-fg)', label: 'Occupé'                },
+  released:   { bg: 'var(--color-surface-3)',    text: 'var(--color-text-subtle)',  label: 'Libéré'                },
+  blocked:    { bg: 'var(--status-blocked-bg)',  text: 'var(--status-blocked-fg)',  label: 'Bloqué'                },
+  indefinite: { bg: 'var(--status-offslot-bg)',  text: 'var(--status-offslot-fg)',  label: "Jusqu'à nouvel ordre"  },
 };
 
 function findBooking(spotId: string, dateStr: string, bookings: BookingWithSpot[]): BookingWithSpot | null {
@@ -189,16 +189,12 @@ export function PlanningPage() {
     padding: '10px 6px',
     border: '1px solid var(--color-border)',
     background: 'var(--color-surface-2)',
-    fontSize: '13px', fontWeight: 600, textAlign: 'center', whiteSpace: 'nowrap',
+    fontSize: 'var(--fs-sm)', fontWeight: 700, textAlign: 'center', whiteSpace: 'nowrap',
+    color: 'var(--color-text-subtle)',
   };
   const tdBase: React.CSSProperties = {
     padding: '10px 6px', border: '1px solid var(--color-border)',
-    verticalAlign: 'middle', fontSize: '14px',
-  };
-  const navBtn: React.CSSProperties = {
-    border: '1px solid var(--color-border)', borderRadius: '8px',
-    background: 'var(--color-surface)', padding: '6px 14px',
-    cursor: 'pointer', fontSize: '18px', lineHeight: 1,
+    verticalAlign: 'middle', fontSize: 'var(--fs-base)',
   };
 
   const modalOpen  = !!createCell || !!editBooking;
@@ -206,29 +202,24 @@ export function PlanningPage() {
   const modalDate  = editBooking ? editBooking.date : createCell?.date;
 
   return (
-    <div style={{ padding: '16px' }}>
+    <div className="page">
 
-      {/* ── Toolbar ── */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', flexWrap: 'wrap', gap: '10px' }}>
-        <h1 style={{ margin: 0, fontSize: '20px', fontWeight: 700 }}>Planning</h1>
+      {/* ── Header ── */}
+      <div className="page__header">
+        <div>
+          <h1 className="page__title">Planning</h1>
+          <p className="page__subtitle">Occupation des places jour par jour. Cliquez sur une case pour réserver ou modifier.</p>
+        </div>
 
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)', flexWrap: 'wrap' }}>
 
           {/* View toggle */}
-          <div style={{ display: 'flex', border: '1px solid var(--color-border)', borderRadius: '8px', overflow: 'hidden' }}>
-            {(['W5', 'W7', 'MONTH'] as ViewMode[]).map((mode, i, arr) => (
+          <div className="segmented">
+            {(['W5', 'W7', 'MONTH'] as ViewMode[]).map((mode) => (
               <button
                 key={mode}
                 onClick={() => switchView(mode)}
-                style={{
-                  padding: '6px 12px',
-                  border: 'none',
-                  borderRight: i < arr.length - 1 ? '1px solid var(--color-border)' : 'none',
-                  background: viewMode === mode ? 'var(--color-primary)' : 'var(--color-surface)',
-                  color: viewMode === mode ? '#fff' : 'var(--color-text)',
-                  fontSize: '12px', fontWeight: 600, cursor: 'pointer',
-                  transition: 'background 0.15s',
-                }}
+                className={viewMode === mode ? 'is-active' : ''}
               >
                 {mode === 'W5' ? '5 jours' : mode === 'W7' ? '7 jours' : 'Mois'}
               </button>
@@ -236,20 +227,17 @@ export function PlanningPage() {
           </div>
 
           {/* Today */}
-          <button
-            onClick={goToToday}
-            style={{ ...navBtn, fontSize: '12px', fontWeight: 600, padding: '6px 12px' }}
-          >
+          <button className="btn btn--ghost btn--sm" onClick={goToToday}>
             Aujourd'hui
           </button>
 
           {/* Nav arrows + label */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-            <button onClick={() => navigate(-1)} style={navBtn}>‹</button>
-            <span style={{ fontSize: '13px', fontWeight: 600, textAlign: 'center', minWidth: isMonth ? '140px' : '200px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)' }}>
+            <button className="icon-btn" onClick={() => navigate(-1)} aria-label="Période précédente">‹</button>
+            <span style={{ fontSize: 'var(--fs-sm)', fontWeight: 700, textAlign: 'center', minWidth: isMonth ? '140px' : '200px' }}>
               {getPeriodLabel(viewMode, days)}
             </span>
-            <button onClick={() => navigate(1)} style={navBtn}>›</button>
+            <button className="icon-btn" onClick={() => navigate(1)} aria-label="Période suivante">›</button>
           </div>
         </div>
       </div>
@@ -259,7 +247,8 @@ export function PlanningPage() {
       ) : (
         <>
           {/* ── Grid ── */}
-          <div style={{ overflowX: 'auto', borderRadius: '10px', border: '1px solid var(--color-border)' }}>
+          <div className="card">
+          <div className="table-wrap" style={{ borderRadius: 'var(--radius-lg)' }}>
             <table style={{ borderCollapse: 'collapse', width: '100%', minWidth: isMonth ? undefined : '520px' }}>
               <thead>
                 <tr>
@@ -279,12 +268,12 @@ export function PlanningPage() {
                           width:    isMonth ? '40px' : undefined,
                           padding:  isMonth ? '6px 2px' : '10px 6px',
                           background: isToday
-                            ? '#eff6ff'
-                            : isWeekend && isMonth ? '#f3f4f6'
+                            ? 'var(--accent-050)'
+                            : isWeekend && isMonth ? 'var(--color-surface-3)'
                             : 'var(--color-surface-2)',
                           color: isToday
-                            ? 'var(--color-primary)'
-                            : isWeekend ? '#9ca3af'
+                            ? 'var(--accent)'
+                            : isWeekend ? 'var(--color-text-subtle)'
                             : 'var(--color-text)',
                         }}
                       >
@@ -350,8 +339,8 @@ export function PlanningPage() {
                               cursor: 'pointer',
                               textAlign: 'center',
                               padding: isMonth ? '5px 2px' : '10px 6px',
-                              boxShadow: isToday ? 'inset 0 0 0 2px #1d4ed8' : undefined,
-                              borderLeft: isAdmin ? `${isMonth ? 2 : 3}px solid #f59e0b` : undefined,
+                              boxShadow: isToday ? 'inset 0 0 0 2px var(--accent)' : undefined,
+                              borderLeft: isAdmin ? `${isMonth ? 2 : 3}px solid var(--status-reserved-fg)` : undefined,
                               opacity: isWeekend && status === 'free' ? 0.5 : 1,
                               transition: 'filter 0.1s',
                             }}
@@ -390,20 +379,21 @@ export function PlanningPage() {
               ))}
             </table>
           </div>
+          </div>
 
           {/* ── Légende ── */}
-          <div style={{ display: 'flex', gap: '10px', marginTop: '12px', flexWrap: 'wrap', alignItems: 'center' }}>
+          <div style={{ display: 'flex', gap: 'var(--space-4)', marginTop: 'var(--space-4)', flexWrap: 'wrap', alignItems: 'center' }}>
             {(Object.entries(CELL) as [CellStatus, typeof CELL[CellStatus]][]).map(([key, val]) => (
-              <div key={key} style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12px', color: 'var(--color-text-muted)' }}>
-                <span style={{ width: '20px', height: '14px', borderRadius: '4px', background: val.bg, display: 'inline-block', flexShrink: 0 }} />
+              <div key={key} style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: 'var(--fs-sm)', color: 'var(--color-text-muted)' }}>
+                <span style={{ width: '20px', height: '14px', borderRadius: '5px', background: val.bg, border: '1px solid var(--color-border)', display: 'inline-block', flexShrink: 0 }} />
                 {val.label}
               </div>
             ))}
-            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12px', color: 'var(--color-text-muted)', marginLeft: '4px' }}>
-              <span style={{ width: '20px', height: '14px', borderRadius: '4px', background: '#f59e0b', display: 'inline-block', flexShrink: 0, borderLeft: '3px solid #b45309' }} />
+            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: 'var(--fs-sm)', color: 'var(--color-text-muted)' }}>
+              <span style={{ width: '20px', height: '14px', borderRadius: '5px', background: 'var(--status-reserved-bg)', display: 'inline-block', flexShrink: 0, borderLeft: '3px solid var(--status-reserved-fg)' }} />
               Admin
             </div>
-            <div style={{ marginLeft: 'auto', fontSize: '11px', color: 'var(--color-text-muted)', fontStyle: 'italic' }}>
+            <div style={{ marginLeft: 'auto', fontSize: 'var(--fs-xs)', color: 'var(--color-text-muted)', fontStyle: 'italic' }}>
               Cliquez sur une case pour réserver ou modifier
             </div>
           </div>

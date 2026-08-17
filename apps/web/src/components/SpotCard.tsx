@@ -1,13 +1,13 @@
 import { useState } from 'react';
 import type { Spot } from '../types/api.types';
 
-const STATUS_COLORS: Record<string, string> = {
-  FREE: 'var(--color-free)',
-  HELD: 'var(--color-reserved)',
-  RESERVED: 'var(--color-reserved)',
-  OCCUPIED: 'var(--color-occupied)',
-  BLOCKED: 'var(--color-blocked)',
-  RELEASED: 'var(--color-free)',
+const STATUS_TOKENS: Record<string, { fg: string; bg: string }> = {
+  FREE:     { fg: 'var(--status-free-fg)',     bg: 'var(--status-free-bg)' },
+  HELD:     { fg: 'var(--status-reserved-fg)', bg: 'var(--status-reserved-bg)' },
+  RESERVED: { fg: 'var(--status-reserved-fg)', bg: 'var(--status-reserved-bg)' },
+  OCCUPIED: { fg: 'var(--status-occupied-fg)', bg: 'var(--status-occupied-bg)' },
+  BLOCKED:  { fg: 'var(--status-blocked-fg)',  bg: 'var(--status-blocked-bg)' },
+  RELEASED: { fg: 'var(--status-free-fg)',     bg: 'var(--status-free-bg)' },
 };
 
 const STATUS_LABELS: Record<string, string> = {
@@ -27,7 +27,7 @@ interface Props {
 
 export function SpotCard({ spot, onClick, selected }: Props) {
   const [hovered, setHovered] = useState(false);
-  const color = STATUS_COLORS[spot.status] ?? '#6b7280';
+  const tokens = STATUS_TOKENS[spot.status] ?? { fg: 'var(--color-text-muted)', bg: 'var(--color-surface-3)' };
   const isClickable = spot.status === 'FREE' && !!onClick;
 
   const elevated = selected || (isClickable && hovered);
@@ -39,43 +39,43 @@ export function SpotCard({ spot, onClick, selected }: Props) {
       onMouseLeave={() => setHovered(false)}
       style={{
         background: 'var(--color-surface)',
-        border: `2px solid ${selected ? 'var(--color-primary)' : color}`,
-        borderRadius: '10px',
-        padding: '12px',
+        border: `1px solid ${selected ? 'var(--brand)' : 'var(--color-border)'}`,
+        boxShadow: selected
+          ? `var(--shadow-md), inset 0 0 0 1px var(--brand)`
+          : elevated
+            ? 'var(--shadow-md)'
+            : 'var(--shadow-sm)',
+        borderRadius: 'var(--radius-md)',
+        padding: 'var(--space-3) var(--space-4)',
         cursor: isClickable ? 'pointer' : 'default',
         textAlign: 'left',
         width: '100%',
-        transition: 'border-color 0.15s, transform 0.15s, box-shadow 0.15s',
-        transform: elevated ? 'translateY(-2px) scale(1.01)' : 'scale(1)',
-        boxShadow: selected
-          ? 'var(--shadow-md)'
-          : hovered && isClickable
-            ? 'var(--shadow-md)'
-            : 'var(--shadow-sm)',
+        position: 'relative',
+        overflow: 'hidden',
+        transition: 'border-color .15s, transform .15s, box-shadow .15s',
+        transform: elevated ? 'translateY(-2px)' : 'none',
       }}
     >
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-        <div>
-          <div style={{ fontSize: '20px', fontWeight: 700, color: 'var(--color-text)' }}>
+      {/* Liseré de statut à gauche */}
+      <span style={{
+        position: 'absolute', left: 0, top: 0, bottom: 0, width: '4px',
+        background: tokens.fg, opacity: 0.9,
+      }} />
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 'var(--space-2)' }}>
+        <div style={{ minWidth: 0 }}>
+          <div style={{ fontSize: 'var(--fs-xl)', fontWeight: 800, letterSpacing: '-.02em', color: 'var(--color-text)', lineHeight: 1.1 }}>
             {spot.number}
           </div>
           {spot.label && (
-            <div style={{ fontSize: '11px', color: 'var(--color-text-muted)', marginTop: '2px' }}>
+            <div style={{ fontSize: 'var(--fs-xs)', color: 'var(--color-text-muted)', marginTop: '3px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
               {spot.label}
             </div>
           )}
         </div>
-        <span style={{
-          fontSize: '10px',
-          fontWeight: 600,
-          padding: '3px 8px',
-          borderRadius: 'var(--radius-full)',
-          background: `${color}22`,
-          color,
-          textTransform: 'uppercase',
-          letterSpacing: '0.05em',
-          flexShrink: 0,
-        }}>
+        <span
+          className="badge"
+          style={{ background: tokens.bg, color: tokens.fg, flexShrink: 0 }}
+        >
           {STATUS_LABELS[spot.status] ?? spot.status}
         </span>
       </div>

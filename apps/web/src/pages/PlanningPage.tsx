@@ -323,7 +323,6 @@ export function PlanningPage() {
                         const status    = cellStatus(spot, iso, bookings);
                         const booking   = findBooking(spot.id, iso, bookings);
                         const c         = CELL[status];
-                        const isToday   = iso === todayStr;
                         const isAdmin   = booking?.source === 'ADMIN';
                         const isWeekend = dowIndex(d) >= 5;
 
@@ -339,7 +338,6 @@ export function PlanningPage() {
                               cursor: 'pointer',
                               textAlign: 'center',
                               padding: isMonth ? '5px 2px' : '10px 6px',
-                              boxShadow: isToday ? 'inset 0 0 0 2px var(--accent)' : undefined,
                               borderLeft: isAdmin ? `${isMonth ? 2 : 3}px solid var(--status-reserved-fg)` : undefined,
                               opacity: isWeekend && status === 'free' ? 0.5 : 1,
                               transition: 'filter 0.1s',

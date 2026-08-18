@@ -300,6 +300,80 @@ const server = http.createServer(async (req, res) => {
 
   try {
 
+    // ── Agent IA (email → réservation, appelé par Dust) ────────────────────────
+    // Protégé par un jeton porteur (AGENT_API_TOKEN, variable d'env Render).
+    // Fail-closed : sans jeton configuré, l'API agent est entièrement désactivée.
+    if (path.startsWith('/api/agent/')) {
+      const agentToken = process.env.AGENT_API_TOKEN;
+      if (!agentToken) return send(503, { message: 'API agent non configurée (AGENT_API_TOKEN manquant)' });
+      if ((req.headers.authorization || '') !== `Bearer ${agentToken}`) return send(401, { message: 'Jeton agent invalide' });
+
+      // Vérif de vie : GET /api/agent/ping
+      if (path === '/api/agent/ping' && method === 'GET') {
+        return send(200, { ok: true, today: todayIso() });
+      }
+
+      // Places libres pour une date : GET /api/agent/availability?date=YYYY-MM-DD
+      if (path === '/api/agent/availability' && method === 'GET') {
+        const date = url.searchParams.get('date') || todayIso();
+        if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) return send(400, { message: 'Date invalide (format attendu : YYYY-MM-DD)' });
+        const free = (await spotsForDate(date)).filter((s) => s.status === 'FREE');
+        return send(200, { date, count: free.length, spots: free.map((s) => ({ id: s.id, number: s.number, type: s.type })) });
+      }
+
+      // Réserver : POST /api/agent/reserve
+      //   body : { email, date, startTime?, endTime?, spotNumber? }
+      //   - user identifié par email (doit exister et être actif)
+      //   - place : spotNumber si fournie et libre, sinon 1re place libre du jour
+      //   - envoie le mail de confirmation habituel
+      if (path === '/api/agent/reserve' && method === 'POST') {
+        const body = await getBody();
+        const email = String(body.email || '').trim().toLowerCase();
+        const date = String(body.date || '').trim();
+        const startTime = body.startTime || process.env.DEFAULT_SLOT_START || '08:00';
+        const endTime = body.endTime || process.env.DEFAULT_SLOT_END || '18:00';
+        if (!email) return send(400, { message: 'Email requis' });
+        if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) return send(400, { message: 'Date invalide (format attendu : YYYY-MM-DD)' });
+        if (date < todayIso()) return send(400, { message: 'Impossible de réserver une date passée' });
+        if (startTime >= endTime) return send(400, { message: "L'heure de début doit être avant l'heure de fin" });
+
+        const [user] = await q('SELECT * FROM users WHERE lower(email) = $1', [email]);
+        if (!user) return send(404, { message: `Aucun utilisateur avec l'email ${email}` });
+        if (user.status !== 'ACTIVE' || user.active === false) return send(403, { message: 'Compte utilisateur inactif ou non activé' });
+
+        const free = (await spotsForDate(date)).filter((s) => s.status === 'FREE');
+        let spot;
+        if (body.spotNumber != null && String(body.spotNumber).trim() !== '') {
+          spot = free.find((s) => String(s.number) === String(body.spotNumber).trim());
+          if (!spot) return send(409, { message: `La place ${body.spotNumber} n'est pas libre le ${date}` });
+        } else {
+          spot = free[0];
+        }
+        if (!spot) return send(409, { message: `Aucune place libre le ${date}` });
+
+        const id = newId('bk');
+        try {
+          await q(`INSERT INTO bookings (id,spot_id,date,start_time,end_time,status,user_id,source,is_indefinite,checked_in,created_at)
+                   VALUES ($1,$2,$3,$4,$5,'RESERVED',$6,'AGENT',false,false,$7)`,
+            [id, spot.id, date, startTime, endTime, user.id, new Date().toISOString()]);
+        } catch (e) {
+          if (e.code === '23505') return send(409, { message: `La place ${spot.number} vient d'être réservée, réessayez` });
+          throw e;
+        }
+        await pushLog('BOOKING_CREATED', { userId: user.id, userName: user.name, accessId: user.email, role: user.role, detail: `Place ${spot.number} le ${date} — via agent email` });
+        void sendBookingMail(user.email, user.name, 'CONFIRMED', spot.number, [date], startTime, endTime);
+        return send(201, {
+          bookingId: id,
+          spot: { id: spot.id, number: spot.number, type: spot.type },
+          date, startTime, endTime,
+          user: { name: user.name, email: user.email },
+          message: `Place ${spot.number} réservée pour ${user.name} le ${date} (${startTime}–${endTime}). Un mail de confirmation a été envoyé.`,
+        });
+      }
+
+      return send(404, { message: `Route agent inconnue : ${method} ${path}` });
+    }
+
     // ── Auth ──────────────────────────────────────────────────────────────────
 
     if (path === '/api/auth/login' && method === 'POST') {

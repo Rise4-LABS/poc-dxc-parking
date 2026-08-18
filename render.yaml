@@ -12,6 +12,10 @@ services:
         value: 20
       - key: APP_URL
         value: https://poc-dxc-parking.onrender.com
+      # Jeton d'appel de l'API agent (/api/agent/*), utilisé par Dust.
+      # Render génère une valeur forte ; à copier depuis le dashboard vers Dust.
+      - key: AGENT_API_TOKEN
+        generateValue: true
       # Credentials d'envoi de mail via noreplyrise@rise.fo (Microsoft Graph).
       # Fournit MAIL_TENANT_ID / MAIL_CLIENT_ID / MAIL_CLIENT_SECRET / MAIL_SENDER.
       - fromGroup: noreplyrise-mail

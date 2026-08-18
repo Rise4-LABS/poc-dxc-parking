@@ -55,6 +55,18 @@ Render redéploie automatiquement en 2-3 minutes.
 - `NODE_ENV` : environnement (`production` sur Render)
 - `APP_URL` : URL publique de l'app, utilisée dans les liens d'activation des emails
 - `MAIL_TENANT_ID` / `MAIL_CLIENT_ID` / `MAIL_CLIENT_SECRET` / `MAIL_SENDER` : credentials d'envoi de mail via `noreplyrise@rise.fo` (Microsoft Graph). Fournis par l'env group Render partagé `noreplyrise-mail` (jamais de valeur en clair dans le repo).
+- `AGENT_API_TOKEN` : jeton porteur protégeant l'API agent `/api/agent/*` (appelée par Dust). Généré par Render (`generateValue: true`), à copier depuis le dashboard vers Dust. Jamais en clair dans le repo.
+
+### Agent IA de réservation par email (via Dust)
+- **Objectif** : un utilisateur envoie un email en langage naturel (« demain je veux une place ») ; un agent Dust comprend la demande, appelle l'app pour trouver/réserver une place, puis répond.
+- **Répartition** : **Dust** = réception email + compréhension IA + réponse ; **l'app** expose uniquement une API d'action sécurisée. L'IA et l'email restent chez Dust (outil sanctionné DXC/Rise) — aucune clé LLM ni logique d'email entrant dans ce repo.
+- **API exposée par l'app** (`mock-server.js`, préfixe `/api/agent/`, en-tête `Authorization: Bearer <AGENT_API_TOKEN>`) :
+  - `GET /api/agent/ping` → vérif de vie.
+  - `GET /api/agent/availability?date=YYYY-MM-DD` → liste des places libres ce jour-là.
+  - `POST /api/agent/reserve` `{ email, date, startTime?, endTime?, spotNumber? }` → réserve pour l'utilisateur (identifié par email, doit exister et être actif) ; place choisie = `spotNumber` si libre, sinon la 1re libre ; envoie le mail de confirmation habituel. Les réservations créées ont `source = 'AGENT'`.
+- **Sécurité** : fail-closed — sans `AGENT_API_TOKEN` configuré, l'API agent renvoie 503 (désactivée). Jeton invalide → 401. Seul un email d'utilisateur **déjà connu** peut réserver (pas de création de compte par l'agent).
+- **Dépendance IT à ouvrir** (hors app) : pour que Dust reçoive les emails, IT doit connecter une **boîte mail dédiée** (ex. `parking@rise.fo`) à l'espace Dust. C'est le seul point bloquant restant côté réception ; l'app, elle, est prête.
+- **Point non tranché / POC only** : l'API agent identifie l'utilisateur uniquement par l'adresse email de l'expéditeur — à durcir en prod (usurpation d'expéditeur possible, à recouper avec un annuaire ou une confirmation).
 
 ### Envoi de mails — écart avec la spec initiale (tranché par Claude)
 - Le POC envoie des mails à deux moments : **activation de compte** (création / renvoi d'invitation par un admin) et **réservation** (confirmation / annulation).

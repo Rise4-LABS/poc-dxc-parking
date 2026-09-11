@@ -261,6 +261,17 @@ async function initDb() {
     }
     console.log('[DB] ✅ Places initiales créées');
   }
+
+  // Places ajoutées après le seed initial (idempotent : n'insère que si absentes,
+  // ne touche jamais aux places existantes ni à leur statut).
+  for (const s of [
+    { id: 's20', n: '20', t: 'LOT1' },
+    { id: 's24', n: '24', t: 'LOT1' },
+    { id: 's26', n: '26', t: 'LOT1' },
+  ]) {
+    await q(`INSERT INTO spots (id,number,type,status,block_reason)
+             VALUES ($1,$2,$3,'FREE',null) ON CONFLICT (id) DO NOTHING`, [s.id, s.n, s.t]);
+  }
 }
 
 // ─── Server ───────────────────────────────────────────────────────────────────

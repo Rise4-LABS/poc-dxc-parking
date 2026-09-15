@@ -33,6 +33,11 @@ Render redéploie automatiquement en 2-3 minutes.
 
 > Section maintenue par Claude. À reviewer avant promotion en vraie app.
 
+### Plan Render — Starter (always-on), demandé par l'utilisateur
+- Le web service est passé de `free` à `starter` (~7 $/mo, toujours allumé) pour supprimer le « cold start » du plan gratuit (~30-50 s au premier accès après 15 min d'inactivité).
+- Demande explicite de l'utilisateur (verbatim) : « ca me saoule quand j'utilise l'app, il y a un temps de rafraichissement render. je veux plus qu'il soit là ».
+- **Réversible** : repasser `plan: starter` → `plan: free` dans `render.yaml`, ou via le dashboard Render. La **base de données n'est pas affectée** par ce changement de plan (ressource séparée).
+
 ### Choix techniques tranchés par Claude (sans validation utilisateur)
 - Serveur API entièrement in-memory (mock-server.js) — toutes les données sont perdues au redémarrage. Convient pour un POC de démonstration uniquement.
 - Authentification par token JWT simulé (pas de vraie signature cryptographique) — à remplacer par un vrai système d'auth en production.
